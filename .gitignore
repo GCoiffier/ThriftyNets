@@ -1,0 +1,5 @@
+rcnn/logs/
+__pycache__/
+rcnn/__pycache__/
+.vscode/
+.git/

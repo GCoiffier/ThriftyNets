@@ -1,0 +1,10 @@
+python3 train.py -mode 1 -iter 30 -downsampling 6 --name h1
+python3 train.py -mode 2 -iter 30 -downsampling 6 --name h2
+python3 train.py -mode 3 -iter 30 -downsampling 6 --name h3
+python3 train.py -mode 4 -iter 30 -downsampling 6 --name h4
+python3 train.py -mode 5 -iter 30 -downsampling 6 --name h5
+python3 train.py -mode 8 -iter 30 -downsampling 6 --name h8
+python3 train.py -mode 10 -iter 30 -downsampling 6 --name h10
+python3 train.py -mode 15 -iter 30 -downsampling 6 --name h15
+python3 train.py -mode 20 -iter 30 -downsampling 6 --name h20
+python3 train.py -mode 30 -iter 30 -downsampling 6 --name h30
