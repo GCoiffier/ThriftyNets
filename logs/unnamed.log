@@ -1,0 +1,2 @@
+Namespace(activ='tanh', auto_augment=False, batch_size=100, bias=False, checkpoint_freq=0, cutout=0, dataset='cifar10', epochs=200, gamma=0.5, history=5, iter=25, lr=0.1, min_lr=1e-05, model='thrifty', momentum=0.9, name='unnamed', nesterov=True, optimizer='sgd', patience=5, pool=[3], resume=None, seed=999234, size=64, test_batch_size=1000, weight_decay=0.0005)Parameters : 40714
+*******

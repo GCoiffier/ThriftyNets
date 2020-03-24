@@ -1,0 +1,12 @@
+python3 train.py -model resthrifty -iter 40 -pool 8 -history 2 --name resthrifty2_40T
+python3 train.py -model resthrifty -iter 40 -pool 8 -history 3 --name resthrifty3_40T
+python3 train.py -model resthrifty -iter 40 -pool 8 -history 4 --name resthrifty4_40T
+python3 train.py -model resthrifty -iter 40 -pool 8 -history 5 --name resthrifty5_40T
+python3 train.py -model resthrifty -iter 40 -pool 8 -history 6 --name resthrifty6_40T
+python3 train.py -model resthrifty -iter 40 -pool 8 -history 7 --name resthrifty7_40T
+python3 train.py -model resthrifty -iter 40 -pool 8 -history 8 --name resthrifty8_40T
+python3 train.py -model resthrifty -iter 40 -pool 8 -history 9 --name resthrifty9_40T
+python3 train.py -model resthrifty -iter 40 -pool 8 -history 10 --name resthrifty10_40T
+python3 train.py -model resthrifty -iter 40 -pool 8 -history 20 --name resthrifty20_40T
+python3 train.py -model resthrifty -iter 40 -pool 8 -history 30 --name resthrifty30_40T
+python3 train.py -model resthrifty -iter 40 -pool 8 -history 40 --name resthrifty40_40T

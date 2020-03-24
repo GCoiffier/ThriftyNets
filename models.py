@@ -71,7 +71,11 @@ class ThriftyNet(nn.Module):
             if self.pool_strategy[t]==2:
                 xnext = F.max_pool2d(xnext, 2)
         
-        out = F.adaptive_max_pool2d(xnext, (1,1))[:,:,0,0]
+        if xnext.size()[-1]>1:
+            out = F.adaptive_max_pool2d(xnext, (1,1))[:,:,0,0]
+        else:
+            out = xnext
+            
         if get_features:
             return out, self.LOutput(out)
         else:
