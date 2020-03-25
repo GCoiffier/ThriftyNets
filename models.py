@@ -31,7 +31,7 @@ def get_model(args, metadata):
 
 class ThriftyNet(nn.Module):
 
-    def __init__(self, input_shape, n_classes, n_filters, n_iter, pool_strategy, activ="relu", bias=True):
+    def __init__(self, input_shape, n_classes, n_filters, n_iter, pool_strategy, activ="relu", bias=False):
         super(ThriftyNet, self).__init__()
         self.input_shape = input_shape
         self.n_classes = n_classes
@@ -107,7 +107,7 @@ class ThriftyNet(nn.Module):
 
 class ResThriftyNet(ThriftyNet):
 
-    def __init__(self, input_shape, n_classes, n_filters, n_iter, n_history, pool_strategy, activ="relu", bias=True):
+    def __init__(self, input_shape, n_classes, n_filters, n_iter, n_history, pool_strategy, activ="relu", bias=False):
         ThriftyNet.__init__(self, input_shape, n_classes, n_filters, n_iter, pool_strategy, activ, bias)
         self.n_history = n_history
 
@@ -118,7 +118,6 @@ class ResThriftyNet(ThriftyNet):
         x0 = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
         
         hist = [None for _ in range(self.n_history-1)] + [x0]
-        size = x0.size()[-1]
 
         for t in range(self.n_iter):
             a = self.Lconv(hist[-1])
@@ -128,18 +127,17 @@ class ResThriftyNet(ThriftyNet):
                 if x is not None:
                     b = b + self.alpha[t,i+1] * x
 
-            x = self.Lnormalization[t](b)
+            b = self.Lnormalization[t](b)
             
             for i in range(1, self.n_history-1):
                 hist[i] = hist[i+1]
-            hist[self.n_history-1] = x
+            hist[self.n_history-1] = b
 
             if self.pool_strategy[t]==2:
                 for i in range(len(hist)):
                     if hist[i] is not None:
                         hist[i] = F.max_pool2d(hist[i], 2)
 
-        size = hist[-1].size()[-1]
         out = F.adaptive_max_pool2d(hist[-1], (1,1))[:,:,0,0]
         if get_features:
             return out, self.LOutput(out)
