@@ -122,16 +122,16 @@ class ResThriftyNet(ThriftyNet):
         for t in range(self.n_iter):
             a = self.Lconv(hist[-1])
             a = self.Lactiv(a)
-            b = self.alpha[t,0] * a
+            a = self.alpha[t,0] * a
             for i, x in enumerate(hist):
                 if x is not None:
-                    b = b + self.alpha[t,i+1] * x
+                    a = a + self.alpha[t,i+1] * x
 
-            b = self.Lnormalization[t](b)
+            a = self.Lnormalization[t](a)
             
             for i in range(1, self.n_history-1):
                 hist[i] = hist[i+1]
-            hist[self.n_history-1] = b
+            hist[self.n_history-1] = a
 
             if self.pool_strategy[t]==2:
                 for i in range(len(hist)):
