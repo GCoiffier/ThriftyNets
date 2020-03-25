@@ -111,7 +111,7 @@ class ResThriftyNet(ThriftyNet):
         ThriftyNet.__init__(self, input_shape, n_classes, n_filters, n_iter, pool_strategy, activ, bias)
         self.n_history = n_history
 
-        self.alpha = nn.Parameter(torch.zeros((n_iter, n_history+1))+0.5)
+        self.alpha = nn.Parameter(torch.zeros((n_iter, n_history+1))+1.0)
         self.n_parameters = sum(p.numel() for p in self.parameters())
 
     def forward(self, x, get_features=False):
@@ -133,7 +133,7 @@ class ResThriftyNet(ThriftyNet):
                 hist[i] = hist[i+1]
             hist[self.n_history-1] = a
 
-            if self.pool_strategy[t]==2:
+            if self.pool_strategy[t]:
                 for i in range(len(hist)):
                     if hist[i] is not None:
                         hist[i] = F.max_pool2d(hist[i], 2)
