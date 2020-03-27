@@ -53,7 +53,7 @@ class ThriftyNet(nn.Module):
         print(self.pool_strategy)
 
         self.Lactiv = get_activ(activ)
-        # self.Lnormalization = nn.ModuleList([nn.BatchNorm2d(n_filters) for x in range(n_iter)])
+        self.Lnormalization = nn.ModuleList([nn.BatchNorm2d(n_filters) for x in range(n_iter)])
         self.Lconv = nn.Conv2d(n_filters, n_filters, kernel_size=3, stride=1, padding=1, bias=self.bias)
         self.LOutput = nn.Linear(n_filters, n_classes)
         self.activ = get_activ(activ)
@@ -67,7 +67,7 @@ class ThriftyNet(nn.Module):
         for t in range(self.n_iter):
             xnext = self.Lconv(xcur)
             xnext = self.Lactiv(xnext) + xcur
-            # xnext = self.Lnormalization[t](xnext)
+            xnext = self.Lnormalization[t](xnext)
             if self.pool_strategy[t]==2:
                 xnext = F.max_pool2d(xnext, 2)
         
@@ -117,13 +117,10 @@ class ResThriftyNet(ThriftyNet):
             self.alpha[t,1] = 0.9
         self.alpha = nn.Parameter(self.alpha)
 
-        self.LfirstBN = nn.BatchNorm2d(3) 
-
         self.n_parameters = sum(p.numel() for p in self.parameters())
 
     def forward(self, x, get_features=False):
         
-        x = self.LfirstBN(x)
         x0 = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
         
         hist = [None for _ in range(self.n_history-1)] + [x0]
@@ -136,7 +133,7 @@ class ResThriftyNet(ThriftyNet):
                 if x is not None:
                     a = a + self.alpha[t,i+1] * x
 
-            # a = self.Lnormalization[t](a)
+            a = self.Lnormalization[t](a)
             
             for i in range(1, self.n_history-1):
                 hist[i] = hist[i+1]
