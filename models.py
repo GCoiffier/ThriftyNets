@@ -53,7 +53,7 @@ class ThriftyNet(nn.Module):
         print(self.pool_strategy)
 
         self.Lactiv = get_activ(activ)
-        #self.Lnormalization = nn.ModuleList([nn.BatchNorm2d(n_filters) for x in range(n_iter)])
+        self.Lnormalization = nn.ModuleList([nn.BatchNorm2d(n_filters) for x in range(n_iter)])
         self.Lconv = nn.Conv2d(n_filters, n_filters, kernel_size=3, stride=1, padding=1, bias=self.bias)
         self.LOutput = nn.Linear(n_filters, n_classes)
         self.activ = get_activ(activ)
@@ -81,11 +81,13 @@ class ThriftyNet(nn.Module):
         else:
             return self.LOutput(out)
 
+    """
     def normalize(self, x):
         y = x.view(x.shape[0],-1)
         y = y-torch.mean(y,dim=1,keepdim=True)
         y=y/torch.std(y,dim=1,keepdim=True)
         return y.view(x.shape)
+    """
 
     def save(self, path):
         data = { "input_shape" : self.input_shape,
@@ -139,8 +141,8 @@ class ResThriftyNet(ThriftyNet):
                 if x is not None:
                     a = a + self.alpha[t,i+1] * x
 
-            #a = self.Lnormalization[t](a)
-            a = self.normalize(a)
+            a = self.Lnormalization[t](a)
+            #a = self.normalize(a)
             
             for i in range(1, self.n_history-1):
                 hist[i] = hist[i+1]
