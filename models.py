@@ -111,9 +111,10 @@ class ResThriftyNet(ThriftyNet):
         ThriftyNet.__init__(self, input_shape, n_classes, n_filters, n_iter, pool_strategy, activ, bias)
         self.n_history = n_history
 
-        self.alpha = nn.Parameter(torch.zeros((n_iter, n_history+1)))
+        self.alpha = torch.zeros((n_iter, n_history+1))
         for t in range(n_iter):
             self.alpha[t,0] = 1.0
+        self.alpha = nn.Parameter(self.alpha)
 
         self.n_parameters = sum(p.numel() for p in self.parameters())
 
