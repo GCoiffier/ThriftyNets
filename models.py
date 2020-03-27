@@ -113,12 +113,17 @@ class ResThriftyNet(ThriftyNet):
 
         self.alpha = torch.zeros((n_iter, n_history+1))
         for t in range(n_iter):
-            self.alpha[t,0] = 1.0
+            self.alpha[t,0] = 0.1
+            self.alpha[t,1] = 0.9
         self.alpha = nn.Parameter(self.alpha)
+
+        self.LfirstBN = nn.BatchNorm2d(3) 
 
         self.n_parameters = sum(p.numel() for p in self.parameters())
 
     def forward(self, x, get_features=False):
+        
+        x = self.LfirstBN(x)
         x0 = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
         
         hist = [None for _ in range(self.n_history-1)] + [x0]
