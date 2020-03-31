@@ -40,6 +40,8 @@ class ThriftyNet(nn.Module):
         self.activ = activ
         self.bias = bias
 
+        self.alpha = torch.zeros((n_iter, 2))
+
         self.pool_strategy = [False]*self.n_iter
         assert isinstance(pool_strategy, list) or isinstance(pool_strategy, tuple)
         if len(pool_strategy)==1:
@@ -66,7 +68,7 @@ class ThriftyNet(nn.Module):
         
         for t in range(self.n_iter):
             xnext = self.Lconv(xcur)
-            xnext = self.Lactiv(xnext) + xcur
+            xnext = self.alpha[t,0] * self.Lactiv(xnext) + self.alpha[t,1] * xcur
             xnext = self.Lnormalization[t](xnext)
             if self.pool_strategy[t]==2:
                 xnext = F.max_pool2d(xnext, 2)
@@ -80,14 +82,6 @@ class ThriftyNet(nn.Module):
             return out, self.LOutput(out)
         else:
             return self.LOutput(out)
-
-    """
-    def normalize(self, x):
-        y = x.view(x.shape[0],-1)
-        y = y-torch.mean(y,dim=1,keepdim=True)
-        y=y/torch.std(y,dim=1,keepdim=True)
-        return y.view(x.shape)
-    """
 
     def save(self, path):
         data = { "input_shape" : self.input_shape,
@@ -142,7 +136,6 @@ class ResThriftyNet(ThriftyNet):
                     a = a + self.alpha[t,i+1] * x
 
             a = self.Lnormalization[t](a)
-            #a = self.normalize(a)
             
             for i in range(1, self.n_history-1):
                 hist[i] = hist[i+1]
