@@ -50,6 +50,15 @@ class HSwish(nn.Module):
     def forward(self, x):
         return x * self.relu(x + 3.0) / 6.0
 
+class MBConv(nn.Module):
+    def init(self, in_maps, compress):
+        super(MBConv, self).__init__()
+        self.conv1 = nn.Conv2d(in_maps, compress, kernel_size = 3, padding = 1, bias = False, groups = compress)
+        self.conv2 = nn.Conv2d(compress, in_maps, kernel_size = 1, padding = 0, bias = False)
+
+    def forward(self, x):
+        return self.conv2(self.conv1(x))
+
 def get_activ(activ):
     if activ=="relu" :
         return nn.ReLU()

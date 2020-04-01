@@ -19,11 +19,13 @@ metadata : dict
 def get_model(args, metadata):
     model_name = args.model.lower()    
     if model_name=="thrifty":
-        return ThriftyNet(metadata["input_shape"], metadata["n_classes"], args.size, args.iter, args.pool, args.activ, args.bias)
+        return ThriftyNet(metadata["input_shape"], metadata["n_classes"], args.size, 
+                        args.iter, args.pool, args.activ, args.conv_mode, args.bias)
 
     elif model_name in ["res_thrifty", "resthrifty"]:
         return ResThriftyNet(metadata["input_shape"], metadata["n_classes"], n_filters=args.size, 
-                            n_iter=args.iter, n_history=args.history, pool_strategy=args.pool, activ=args.activ, bias=args.bias)
+                            n_iter=args.iter, n_history=args.history, pool_strategy=args.pool, 
+                            activ=args.activ, conv_mode=args.conv_mode, bias=args.bias)
 
     else:
         raise Exception("Model type was not recognized")
@@ -31,16 +33,17 @@ def get_model(args, metadata):
 
 class ThriftyNet(nn.Module):
 
-    def __init__(self, input_shape, n_classes, n_filters, n_iter, pool_strategy, activ="relu", bias=False):
+    def __init__(self, input_shape, n_classes, n_filters, n_iter, pool_strategy, activ="relu", conv_mode="classic", bias=False):
         super(ThriftyNet, self).__init__()
         self.input_shape = input_shape
         self.n_classes = n_classes
         self.n_filters = n_filters
         self.n_iter = n_iter
         self.activ = activ
+        self.conv_mode = conv_mode
         self.bias = bias
 
-        self.alpha = torch.zeros((n_iter, 2))
+        self.alpha = torch.zeros((n_iter, 2)+1.0)
 
         self.pool_strategy = [False]*self.n_iter
         assert isinstance(pool_strategy, list) or isinstance(pool_strategy, tuple)
@@ -56,7 +59,16 @@ class ThriftyNet(nn.Module):
 
         self.Lactiv = get_activ(activ)
         self.Lnormalization = nn.ModuleList([nn.BatchNorm2d(n_filters) for x in range(n_iter)])
-        self.Lconv = nn.Conv2d(n_filters, n_filters, kernel_size=3, stride=1, padding=1, bias=self.bias)
+
+        if self.conv_mode=="classic":
+            self.Lconv = nn.Conv2d(n_filters, n_filters, kernel_size=3, stride=1, padding=1, bias=self.bias)
+        elif self.conv_mode=="mb2":
+            self.Lconv = MBConv(n_filters, n_filters)
+        elif self.conv_mode=="mb2":
+            self.Lconv = MBConv(n_filters, n_filters//2)
+        elif self.conv_mode=="mb4":
+            self.Lconv = MBConv(n_filters, n_filters//4)
+
         self.LOutput = nn.Linear(n_filters, n_classes)
         self.activ = get_activ(activ)
 
@@ -85,6 +97,7 @@ class ThriftyNet(nn.Module):
 
     def save(self, path):
         data = { "input_shape" : self.input_shape,
+                 "conv_mode" : self.conv_mode,
                  "n_classes" : self.n_classes,
                  "n_filters" : self.n_filters,
                  "n_iter" : self.n_iter,
@@ -99,9 +112,10 @@ class ThriftyNet(nn.Module):
     def fromFile(path):
         map_loc = "cpu" if not torch.cuda.is_available() else None
         data = torch.load(path, map_location=map_loc)
-        model = ThriftyNet(data["input_shape"], data["n_classes"], data["n_filters"], 
-                            n_iter=data["iter"], pool_strategy=[0], 
-                            activ=data["activ"], bias=data["bias"])
+        model = ThriftyNet(data["input_shape"], data["n_classes"], 
+                            data["n_filters"], n_iter=data["iter"], 
+                            pool_strategy=[0], activ=data["activ"], 
+                            conv_mode = data["conv_mode"], bias=data["bias"])
         model.pool_strategy = data["pool_strategy"]
         model.load_state_dict(data["state_dict"])
         return model
@@ -159,6 +173,7 @@ class ResThriftyNet(ThriftyNet):
                  "n_iter" : self.n_iter,
                  "n_history" : self.n_history,
                  "bias" : self.bias,
+                 "conv_mode" : self.conv_mode
                  "activ" : self.activ,
                  "pool_strategy" : self.pool_strategy,
                  "state_dict" : self.state_dict()}
@@ -169,9 +184,11 @@ class ResThriftyNet(ThriftyNet):
     def fromFile(path):
         map_loc = "cpu" if not torch.cuda.is_available() else None
         data = torch.load(path, map_location=map_loc)
-        model = ResThriftyNet(data["input_shape"], data["n_classes"], data["n_filters"], 
-                            n_iter=data["iter"], n_history=data["n_history"], pool_strategy=[0], 
-                            activ=data["activ"], bias=data["bias"])
+        model = ResThriftyNet(data["input_shape"], data["n_classes"], 
+                            data["n_filters"], n_iter=data["iter"], 
+                            n_history=data["n_history"], pool_strategy=[0], 
+                            activ=data["activ"], conv_mode = data["conv_mode"],
+                            bias=data["bias"])
         model.pool_strategy = data["pool_strategy"]
         model.load_state_dict(data["state_dict"])
         return model
