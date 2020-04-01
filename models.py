@@ -43,7 +43,7 @@ class ThriftyNet(nn.Module):
         self.conv_mode = conv_mode
         self.bias = bias
 
-        self.alpha = torch.zeros((n_iter, 2)+1.0)
+        #self.alpha = nn.Parameter(torch.zeros((n_iter, 2))+1.0)
 
         self.pool_strategy = [False]*self.n_iter
         assert isinstance(pool_strategy, list) or isinstance(pool_strategy, tuple)
@@ -62,9 +62,10 @@ class ThriftyNet(nn.Module):
 
         if self.conv_mode=="classic":
             self.Lconv = nn.Conv2d(n_filters, n_filters, kernel_size=3, stride=1, padding=1, bias=self.bias)
-        elif self.conv_mode=="mb2":
+        elif self.conv_mode=="mb1":
             self.Lconv = MBConv(n_filters, n_filters)
         elif self.conv_mode=="mb2":
+            print(n_filters)
             self.Lconv = MBConv(n_filters, n_filters//2)
         elif self.conv_mode=="mb4":
             self.Lconv = MBConv(n_filters, n_filters//4)
@@ -123,10 +124,10 @@ class ThriftyNet(nn.Module):
 
 class ResThriftyNet(ThriftyNet):
 
-    def __init__(self, input_shape, n_classes, n_filters, n_iter, n_history, pool_strategy, activ="relu", bias=False):
-        ThriftyNet.__init__(self, input_shape, n_classes, n_filters, n_iter, pool_strategy, activ, bias)
+    def __init__(self, input_shape, n_classes, n_filters, n_iter, n_history, pool_strategy, activ="relu", conv_mode="classic", bias=False):
+        ThriftyNet.__init__(self, input_shape, n_classes, n_filters, n_iter, pool_strategy, activ=activ, conv_mode=conv_mode, bias=bias)
         self.n_history = n_history
-
+        
         self.alpha = torch.zeros((n_iter, n_history+1))
         for t in range(n_iter):
             self.alpha[t,0] = 0.1
@@ -173,7 +174,7 @@ class ResThriftyNet(ThriftyNet):
                  "n_iter" : self.n_iter,
                  "n_history" : self.n_history,
                  "bias" : self.bias,
-                 "conv_mode" : self.conv_mode
+                 "conv_mode" : self.conv_mode,
                  "activ" : self.activ,
                  "pool_strategy" : self.pool_strategy,
                  "state_dict" : self.state_dict()}
