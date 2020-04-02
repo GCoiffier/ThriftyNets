@@ -28,7 +28,7 @@ def args():
     parser.add_argument('--nesterov', default=True, type=bool, help='nesterov momentum')
     parser.add_argument('-wd', '--weight-decay', default=5e-4, type=float)
     parser.add_argument('--batch-size', type=int, default=100)
-    parser.add_argument('--test-batch-size', type=int, default=1000)
+    parser.add_argument('--test-batch-size', type=int, default=100)
     parser.add_argument("-epochs", "--epochs", type=int, default=200)
 
     # Scheduler
