@@ -204,7 +204,7 @@ if __name__ == '__main__':
     torch.manual_seed(args.seed)
     train_loader, test_loader, metadata = get_data_loaders(args)
     
-    model = QuantitizedRCNN(metadata["input_shape"], metadata["n_classes"], args.size, n_iter=args.iter, pool_freq=args.downsampling, mode=args.mode,
+    model = QuantitizedRCNN(metadata["input_shape"], metadata["n_classes"], args.size, n_iter=args.iter, pool_freq=args.pool[0], mode=args.mode,
             n_bits_weight=args.n_bits_weight, n_bits_activ = args.n_bits_activ)
 
     print("N parameters : ", model.n_parameters)
