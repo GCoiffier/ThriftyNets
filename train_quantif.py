@@ -68,22 +68,22 @@ def maxWeight(weight):
     return n-1
 
 
-def quantifier(weight,n_bit):
-        maxi=maxWeight(weight)
-        #max = bin_list(weight)
-        #j=0
-        #for index in range(self.num_of_params):
-        w = weight.clone() #self.target_modules[index]
-        a = w.shape
-        v = torch.zeros(a)
-        v = v + pow(2, n_bit-1 + maxi)
-        v = v.float()
-        v = v.cuda()
-        w.data.copy( w.datav)
-        w = w.int()
-        w = w.float()
-        w.data.copy_(w.data/v)
-        return w
+def quantifier(weight, n_bit):
+    maxi=maxWeight(weight)
+    #max = bin_list(weight)
+    #j=0
+    #for index in range(self.num_of_params):
+    w = weight.clone() #self.target_modules[index]
+    a = w.shape
+    v = torch.zeros(a)
+    v = v + pow(2, n_bit-1 + maxi)
+    v = v.float()
+    v = v.cuda()
+    w.data.copy( w.datav)
+    w = w.int()
+    w = w.float()
+    w.data.copy_(w.data/v)
+    return w
 
 ## _____________________________________________________________________________________________
 
@@ -113,7 +113,7 @@ class QuantitizedRCNN(nn.Module):
 
     def forward(self, x, get_features=False):
         x = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
-        x = min_max_quantize(x, self.n_bits_activ)
+        x = quantifier(x, self.n_bits_activ)
 
         hist = [None for _ in range(self.n_hist-1)] + [x]
         size = x.size()[-1]
@@ -126,7 +126,7 @@ class QuantitizedRCNN(nn.Module):
                 if x is not None:
                     cur = cur + self.residual[n,i+1] * x
             cur = self.Lbn[n](cur)
-            cur = min_max_quantize(cur, self.n_bits_activ)
+            cur = uantifier(cur, self.n_bits_activ)
 
             if n%self.pool_freq == self.pool_freq - 1 and size > 1:
                 size //= 2
@@ -153,10 +153,10 @@ class QuantitizedRCNN(nn.Module):
         self.QLOutputB = self.LOutput.bias.data.clone()
         self.Qresidual = self.residual.data.clone()
         
-        self.Lconv.weight.data.copy_(min_max_quantize(self.QLconv, self.n_bits_weight))
-        self.LOutput.weight.data.copy_(min_max_quantize(self.QLOutputW, self.n_bits_weight))
-        self.LOutput.bias.data.copy_(min_max_quantize(self.QLOutputB, self.n_bits_weight))
-        self.residual.data.copy_(min_max_quantize(self.Qresidual, self.n_bits_weight))
+        self.Lconv.weight.data.copy_(quantifier(self.QLconv, self.n_bits_weight))
+        self.LOutput.weight.data.copy_(quantifier(self.QLOutputW, self.n_bits_weight))
+        self.LOutput.bias.data.copy_(quantifier(self.QLOutputB, self.n_bits_weight))
+        self.residual.data.copy_(quantifier(self.Qresidual, self.n_bits_weight))
 
     def unquantize(self):
         self.residual.data.copy_(self.Qresidual)
