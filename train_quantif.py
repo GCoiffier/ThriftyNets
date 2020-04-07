@@ -74,7 +74,7 @@ def quantifier(weight, n_bit):
     #max = bin_list(weight)
     #j=0
     #for index in range(self.num_of_params):
-    w = weight.clone() #self.target_modules[index]
+    w = weight.clone().cuda() #self.target_modules[index]
     a = w.shape
     v = torch.zeros(a)
     v = v + pow(2, n_bit-1 + maxi)
