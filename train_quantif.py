@@ -80,7 +80,7 @@ def quantifier(weight, n_bit):
     v = v + pow(2, n_bit-1 + maxi)
     v = v.float()
     v = v.cuda()
-    w.data.copy( w.datav)
+    w.data.copy_(w.datav)
     w = w.int()
     w = w.float()
     w.data.copy_(w.data/v)
