@@ -97,6 +97,7 @@ class QuantitizedRCNN(nn.Module):
         self.n_classes = n_classes
         self.n_filters = n_filters
         self.n_iter = n_iter
+        self.n_history = n_history
         self.activ = activ
         self.conv_mode = conv_mode
         self.bias = bias
