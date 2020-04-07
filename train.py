@@ -87,9 +87,6 @@ if __name__ == '__main__':
 
         logger.update({"train_loss" : loss.item(), "train_acc" : acc_score})
 
-        #if args.model == "quantif":
-        #    model.quantitize()
-
         ## TESTING
         test_loss = 0
         test_acc = 0

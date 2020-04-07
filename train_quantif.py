@@ -52,6 +52,39 @@ def min_max_quantize(x, bits):
     v =  v * (max_val - min_val) + min_val
     return v
 
+
+def maxWeight(weight):
+    #liste_max = []
+    #index=0
+    maxi = 0
+
+    w = weight
+    v = w.view(-1)
+    maxi = torch.max(torch.abs(v)).cpu().data.numpy()
+    n=0
+    while(maxi<1):
+        maxi=2
+        n+=1
+    return n-1
+
+
+def quantifier(weight,n_bit):
+        maxi=maxWeight(weight)
+        #max = bin_list(weight)
+        #j=0
+        #for index in range(self.num_of_params):
+        w = weight.clone() #self.target_modules[index]
+        a = w.shape
+        v = torch.zeros(a)
+        v = v + pow(2, n_bit-1 + maxi)
+        v = v.float()
+        v = v.cuda()
+        w.data.copy( w.datav)
+        w = w.int()
+        w = w.float()
+        w.data.copy_(w.data/v)
+        return w
+
 ## _____________________________________________________________________________________________
 
 class QuantitizedRCNN(nn.Module):
