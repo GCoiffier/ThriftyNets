@@ -90,57 +90,84 @@ def quantifier(weight, n_bit):
 
 class QuantitizedRCNN(nn.Module):
 
-    def __init__(self, input_shape, n_classes, n_filters, n_iter=20, pool_freq = 4, mode="3", n_bits_weight=6, n_bits_activ=8):
+    def __init__(self, input_shape, n_classes, n_filters, n_iter, n_history, pool_strategy, activ="relu", 
+                conv_mode="classic", n_bits_weight=8, n_bits_activ=8, bias=False):
         super(QuantitizedRCNN, self).__init__()
-        self.n_iter = n_iter
         self.input_shape = input_shape
+        self.n_classes = n_classes
         self.n_filters = n_filters
-        self.n_classes = n_classes 
-        self.pool_freq = pool_freq
-        self.mode = mode
-        self.n_hist = int(mode)
+        self.n_iter = n_iter
+        self.activ = activ
+        self.conv_mode = conv_mode
+        self.bias = bias
+
         self.n_bits_weight = n_bits_weight
         self.n_bits_activ = n_bits_activ
 
-        self.activ = nn.ReLU()
+        self.pool_strategy = [False]*self.n_iter
+        assert isinstance(pool_strategy, list) or isinstance(pool_strategy, tuple)
+        if len(pool_strategy)==1:
+            freq = pool_strategy[0]
+            for i in range(self.n_iter):
+                if (i%freq == freq-1):
+                    self.pool_strategy[i] = True
+        else:
+            for x in pool_strategy:
+                self.pool_strategy[x] = True
+        print(self.pool_strategy)
 
-        self.Lconv = nn.Conv2d(n_filters, n_filters, kernel_size=3, stride=1, padding=1, bias=False)
+        self.Lactiv = get_activ(activ)
+        self.Lnormalization = nn.ModuleList([nn.BatchNorm2d(n_filters) for x in range(n_iter)])
+
+        if self.conv_mode=="classic":
+            self.Lconv = nn.Conv2d(n_filters, n_filters, kernel_size=3, stride=1, padding=1, bias=self.bias)
+        elif self.conv_mode=="mb1":
+            self.Lconv = MBConv(n_filters, n_filters)
+        elif self.conv_mode=="mb2":
+            print(n_filters)
+            self.Lconv = MBConv(n_filters, n_filters//2)
+        elif self.conv_mode=="mb4":
+            self.Lconv = MBConv(n_filters, n_filters//4)
+
         self.LOutput = nn.Linear(n_filters, n_classes)
-        self.residual = nn.Parameter(torch.FloatTensor(n_iter, self.n_hist+1).uniform_(0.9,1.1) )
-        self.Lbn = nn.ModuleList([nn.BatchNorm2d(n_filters) for x in range(n_iter)])
+        self.activ = get_activ(activ)
+
+        self.alpha = torch.zeros((n_iter, n_history+1))
+        for t in range(n_iter):
+            self.alpha[t,0] = 0.1
+            self.alpha[t,1] = 0.9
+        self.alpha = nn.Parameter(self.alpha)
 
         self.n_parameters = sum(p.numel() for p in self.parameters())
         self.quantize()
 
     def forward(self, x, get_features=False):
-        x = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
-        x = quantifier(x, self.n_bits_activ)
+        
+        x0 = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
+        x0 = quantifier(x0, self.n_bits_activ)
 
-        hist = [None for _ in range(self.n_hist-1)] + [x]
-        size = x.size()[-1]
+        hist = [None for _ in range(self.n_history-1)] + [x0]
 
-        for n in range(self.n_iter):
-            cur = self.Lconv(hist[-1])
-            cur = self.activ(cur)
-            cur = self.residual[n,0] * cur
+        for t in range(self.n_iter):
+            a = self.Lconv(hist[-1])
+            a = self.Lactiv(a)
+            a = self.alpha[t,0] * a
             for i, x in enumerate(hist):
                 if x is not None:
-                    cur = cur + self.residual[n,i+1] * x
-            cur = self.Lbn[n](cur)
-            cur = uantifier(cur, self.n_bits_activ)
+                    a = a + self.alpha[t,i+1] * x
 
-            if n%self.pool_freq == self.pool_freq - 1 and size > 1:
-                size //= 2
-                cur = F.max_pool2d(cur, 2)
+            a = self.Lnormalization[t](a)
+            a = quantifier(a, self.n_bits_activ)
+
+            for i in range(1, self.n_history-1):
+                hist[i] = hist[i+1]
+            hist[self.n_history-1] = a
+
+            if self.pool_strategy[t]:
                 for i in range(len(hist)):
                     if hist[i] is not None:
                         hist[i] = F.max_pool2d(hist[i], 2)
-            
-            for i in range(1, self.n_hist-1):
-                hist[i] = hist[i+1]
-            hist[self.n_hist-1] = cur
-          
-        size = hist[-1].size()[-1]
+
         out = F.adaptive_max_pool2d(hist[-1], (1,1))[:,:,0,0]
         if get_features:
             return out, self.LOutput(out)
@@ -152,41 +179,18 @@ class QuantitizedRCNN(nn.Module):
         self.QLconv = self.Lconv.weight.data.clone()
         self.QLOutputW = self.LOutput.weight.data.clone()
         self.QLOutputB = self.LOutput.bias.data.clone()
-        self.Qresidual = self.residual.data.clone()
+        self.Qalpha = self.alpha.data.clone()
         
         self.Lconv.weight.data.copy_(quantifier(self.QLconv, self.n_bits_weight))
         self.LOutput.weight.data.copy_(quantifier(self.QLOutputW, self.n_bits_weight))
         self.LOutput.bias.data.copy_(quantifier(self.QLOutputB, self.n_bits_weight))
-        self.residual.data.copy_(quantifier(self.Qresidual, self.n_bits_weight))
+        self.alpha.data.copy_(quantifier(self.Qalpha, self.n_bits_weight))
 
     def unquantize(self):
-        self.residual.data.copy_(self.Qresidual)
+        self.alpha.data.copy_(self.Qalpha)
         self.Lconv.weight.data.copy_(self.QLconv)
         self.LOutput.weight.data.copy_(self.QLOutputW)
         self.LOutput.bias.data.copy_(self.QLOutputB)
-
-    def save(self, path):
-        data = { "iter" : self.n_iter,
-                 "input_shape" : self.input_shape,
-                 "n_filters" : self.n_filters,
-                 "n_classes" : self.n_classes,
-                 "mode" : self.mode,
-                 "n_bits_activ" : self.n_bits_activ,
-                 "n_bits_weight" : self.n_bits_weight,
-                 "pool_freq" : self.pool_freq,
-                 "state_dict" : self.state_dict()}
-        torch.save(data, path)
-
-
-    @staticmethod
-    def fromFile(path):
-        map_loc = "cpu" if not torch.cuda.is_available() else None
-        data = torch.load(path, map_location=map_loc)
-        model = QuantitizedRCNN(data["input_shape"], data["n_classes"], data["n_filters"], n_iter=data["iter"], 
-                                pool_freq=data["pool_freq"], mode=data["mode"],
-                                n_bits_activ=data["n_bits_activ"], n_bits_weight=data["n_bits_weight"])
-        model.load_state_dict(data["state_dict"])
-        return model
 
 ## _____________________________________________________________________________________________
 
@@ -204,8 +208,8 @@ if __name__ == '__main__':
     torch.manual_seed(args.seed)
     train_loader, test_loader, metadata = get_data_loaders(args)
     
-    model = QuantitizedRCNN(metadata["input_shape"], metadata["n_classes"], args.size, n_iter=args.iter, pool_freq=args.pool[0], mode=args.mode,
-            n_bits_weight=args.n_bits_weight, n_bits_activ = args.n_bits_activ)
+    model = QuantitizedRCNN(metadata["input_shape"], metadata["n_classes"], args.size, n_iter=args.iter, n_history=args.history, 
+            pool_strategy=args.pool, conv_mode=args.conv_mode, n_bits_weight=args.n_bits_weight, n_bits_activ = args.n_bits_activ)
 
     print("N parameters : ", model.n_parameters)
     if args.resume is not None:

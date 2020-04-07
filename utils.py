@@ -13,7 +13,7 @@ def args():
     parser.add_argument("-activ", "--activ", type=str, default="tanh")
     parser.add_argument("-history", "--history", type=int, default=5)
     parser.add_argument("-bias", "--bias", action="store_true")
-    parser.add_argument("-pool", "--pool", nargs="+", type=int, default=5)
+    parser.add_argument("-pool", "--pool", nargs="+", type=int, default=[5])
     parser.add_argument("-conv-mode", "--conv-mode", type=str, default="classic")
 
     # Dataset and data augmentation
