@@ -15,6 +15,7 @@ import random
 import os
 import sys
 from datasets import get_data_loaders
+from modules import *
 import utils
 
 class RoundNoGradient(torch.autograd.Function):
