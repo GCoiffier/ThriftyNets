@@ -273,7 +273,7 @@ def main_worker(gpu, ngpus_per_node, args):
         model = models.__dict__[args.arch](pretrained=True)
     else:
         print("=> creating model '{}'".format(args.arch))
-        model = ResThriftyNet(2048, 29, 6, [6], conv_mode="mb2")
+        model = ResThriftyNet(2048, 29, 6, [6], conv_mode="mb1")
 
     if args.distributed:
         # For multiprocessing distributed, DistributedDataParallel constructor
