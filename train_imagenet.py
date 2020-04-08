@@ -18,36 +18,56 @@ import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 from torchvision.models import *
-from modules import *
 
 ## ______________________________________________________________________________________
 
-class Embedder(nn.Module):
+class ResNetEmbedder(nn.Module):
 
-    def __init__(self):
-        super(Embedder,self).__init__()
-        self.Lconv1 = nn.Conv2d(3,8,3)
-        self.Lconv2 = nn.Conv2d(8,16,3)
-        self.Lconv3 = nn.Conv2d(16,32,3)
-        self.Lconv3 = nn.Conv2d(32,32,3)
+    def __init__(self, block, layers, num_classes=1000):
+        self.inplanes = 64
+        super(ResNetEmbedder, self).__init__()
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
+                               bias=False)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.relu = nn.ReLU(inplace=True)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        self.layer1 = self._make_layer(block, 64, layers[0])
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
 
-    def forward(self,x):
-        x = self.Lconv1(x)
-        x = F.relu(x)
-        x = F.max_pool2d(x, 2)
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
 
-        x = self.Lconv2(x)
-        x = F.relu(x)
-        x = F.max_pool2d(x, 2)
+    def _make_layer(self, block, planes, blocks, stride=1):
+        downsample = None
+        if stride != 1 or self.inplanes != planes * block.expansion:
+            downsample = nn.Sequential(
+                nn.Conv2d(self.inplanes, planes * block.expansion,
+                          kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(planes * block.expansion),
+            )
 
-        x = self.Lconv3(x)
-        x = F.relu(x)
-        x = F.max_pool2d(x, 2)
+        layers = []
+        layers.append(block(self.inplanes, planes, stride, downsample))
+        self.inplanes = planes * block.expansion
+        for i in range(1, blocks):
+            layers.append(block(self.inplanes, planes))
 
-        x = self.Lconv4(x)
-        x = F.relu(x)
-        x = F.max_pool2d(x, 2)
-        print(x.size())
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
         return x
 
 class ResThriftyNet(nn.Module):
@@ -55,7 +75,7 @@ class ResThriftyNet(nn.Module):
     def __init__(self, n_filters, n_iter, n_history, pool_strategy, activ="relu", conv_mode="classic", bias=False):
         super(ResThriftyNet, self).__init__()
         
-        self.Lembed = Embedder()
+        self.Lembed = ResNet(BasicBlock, [3, 4, 6])
 
         self.input_shape = (32,28,28) # output shape of the embedder
 
@@ -105,6 +125,8 @@ class ResThriftyNet(nn.Module):
     def forward(self, x, get_features=False):
         
         x = self.Lembed(x)
+        print(x.size())
+
         x0 = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
         
         hist = [None for _ in range(self.n_history-1)] + [x0]
