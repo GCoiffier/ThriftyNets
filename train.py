@@ -50,7 +50,7 @@ if __name__ == '__main__':
 
     with open("logs/{}.log".format(args.name), "a") as f:
         f.write(str(args))
-        f.write("Parameters : " + str(model.n_parameters))
+        f.write("\nParameters : " + str(model.n_parameters))
         f.write("\n*******\n")
 
     print("-"*80 + "\n")
