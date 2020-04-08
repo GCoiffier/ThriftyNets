@@ -42,7 +42,7 @@ class ResNetEmbedder(nn.Module):
         self.avgpool = nn.AvgPool2d(7, stride=1)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
         """
-        
+
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
@@ -95,7 +95,7 @@ class ResThriftyNet(nn.Module):
         
         self.Lembed = ResNetEmbedder(resnet.BasicBlock, [3, 4])
 
-        self.input_shape = (32,28,28) # output shape of the embedder
+        self.input_shape = (128,28,28) # output shape of the embedder
 
         self.n_classes = 1000
         self.n_filters = n_filters
@@ -288,7 +288,7 @@ def main_worker(gpu, ngpus_per_node, args):
         model = models.__dict__[args.arch](pretrained=True)
     else:
         print("=> creating model '{}'".format(args.arch))
-        model = ResThriftyNet(2048, 29, 6, [6], conv_mode="mb1")
+        model = ResThriftyNet(2048, 30, 6, [6], conv_mode="mb1")
 
     if args.distributed:
         # For multiprocessing distributed, DistributedDataParallel constructor
