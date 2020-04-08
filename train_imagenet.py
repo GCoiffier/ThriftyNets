@@ -139,12 +139,11 @@ class ResThriftyNet(nn.Module):
         self.LOutput = nn.Linear(n_filters, self.n_classes)
 
         self.n_parameters = sum(p.numel() for p in self.parameters())
+        print(self.n_parameters)
 
     def forward(self, x, get_features=False):
         
         x = self.Lembed(x)
-        print(x.size())
-
         x0 = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
         
         hist = [None for _ in range(self.n_history-1)] + [x0]
@@ -288,7 +287,7 @@ def main_worker(gpu, ngpus_per_node, args):
         model = models.__dict__[args.arch](pretrained=True)
     else:
         print("=> creating model '{}'".format(args.arch))
-        model = ResThriftyNet(2048, 30, 6, [6], conv_mode="mb1")
+        model = ResThriftyNet(2048, 30, 7, [7], conv_mode="mb1")
 
     if args.distributed:
         # For multiprocessing distributed, DistributedDataParallel constructor
