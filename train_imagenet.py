@@ -20,6 +20,8 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 from torchvision.models import resnet
 
+from modules import MBConv
+
 ## ______________________________________________________________________________________
 
 class ResNetEmbedder(nn.Module):
