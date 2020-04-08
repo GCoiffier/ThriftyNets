@@ -11,6 +11,7 @@ from tqdm._utils import _term_move_up
 prefix = _term_move_up() + '\r'
 
 import random
+import time
 import os
 import sys
 from datasets import get_data_loaders
@@ -57,6 +58,7 @@ if __name__ == '__main__':
     test_acc = 0
     lr = optimizer.state_dict()["param_groups"][0]["lr"]
     for epoch in range(1, args.epochs + 1):
+        t0 = time.time()
         logger.update({"Epoch" :  epoch, "lr" : lr})
 
         ## TRAINING
@@ -86,6 +88,7 @@ if __name__ == '__main__':
                         epoch, args.epochs, test_loss, test_acc, avg_loss/(1+batch_idx), acc_score, lr))
 
         logger.update({"train_loss" : loss.item(), "train_acc" : acc_score})
+        logger.update({"epoch_time" : (time.time() - t0)/60 })
 
         ## TESTING
         test_loss = 0
