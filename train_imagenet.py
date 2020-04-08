@@ -17,7 +17,7 @@ import torch.utils.data
 import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
-from torchvision.models import *
+from torchvision.models import resnet
 
 ## ______________________________________________________________________________________
 
@@ -75,7 +75,7 @@ class ResThriftyNet(nn.Module):
     def __init__(self, n_filters, n_iter, n_history, pool_strategy, activ="relu", conv_mode="classic", bias=False):
         super(ResThriftyNet, self).__init__()
         
-        self.Lembed = ResNet(BasicBlock, [3, 4, 6])
+        self.Lembed = ResNetEmbedder(resnet.BasicBlock, [3, 4, 6])
 
         self.input_shape = (32,28,28) # output shape of the embedder
 
