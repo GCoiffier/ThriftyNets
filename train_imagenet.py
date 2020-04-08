@@ -230,6 +230,11 @@ parser.add_argument('--multiprocessing-distributed', action='store_true',
                          'fastest way to use PyTorch for either single node or '
                          'multi node data parallel training')
 
+parser.add_argument("-n-filters", "--n-filters", default=1024, type=int)
+parser.add_argument("-iter", "--iter", default=30, type=int)
+parser.add_argument("-history", "--history", default=5, type=int)
+parser.add_argument("-conv-mode", "--conv-mode", default="mb1", type=str, choices=["mb1", "mb2", "mb4", "classic"])
+
 best_acc1 = 0
 
 
@@ -290,7 +295,7 @@ def main_worker(gpu, ngpus_per_node, args):
         model = models.__dict__[args.arch](pretrained=True)
     else:
         print("=> creating model '{}'".format(args.arch))
-        model = ResThriftyNet(2048, 30, 5, [7], conv_mode="classic")
+        model = ResThriftyNet(args.n_filters, args.iter, args.history, [7], conv_mode=args.conv_mode)
 
     if args.distributed:
         # For multiprocessing distributed, DistributedDataParallel constructor
