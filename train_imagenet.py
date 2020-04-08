@@ -51,6 +51,9 @@ class ResNetEmbedder(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
+        self.n_parameters = sum(p.numel() for p in self.parameters())
+        print("Embedding :", self.n_parameters)
+
     def _make_layer(self, block, planes, blocks, stride=1):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
@@ -139,7 +142,7 @@ class ResThriftyNet(nn.Module):
         self.LOutput = nn.Linear(n_filters, self.n_classes)
 
         self.n_parameters = sum(p.numel() for p in self.parameters())
-        print(self.n_parameters)
+        print("Thrifty :", self.n_parameters - self.Lembed.n_parameters)
 
     def forward(self, x, get_features=False):
         
