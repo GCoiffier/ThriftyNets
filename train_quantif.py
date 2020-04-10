@@ -19,24 +19,24 @@ from modules import *
 import utils
 
 class IntNoGradient(torch.autograd.Function):
-
-	@staticmethod
-	def forward(ctx, x):
-		return x.int()
-
-	@staticmethod
-	def backward(ctx, g):
-		return g
+    
+    @staticmethod
+    def forward(ctx, x):
+        return x.int()
+    
+    @staticmethod
+    def backward(ctx, g):
+        return g.int()
 
 class FloatNoGradient(torch.autograd.Function):
     
     @staticmethod
-	def forward(ctx, x):
-		return x.float()
-
-	@staticmethod
-	def backward(ctx, g):
-		return g
+    def forward(ctx, x):
+        return x.float()
+        
+    @staticmethod
+    def backward(ctx, g):
+        return g.float()
 
 def maxWeight(weight):
     #liste_max = []
@@ -58,11 +58,11 @@ def quantifier(weight, n_bit):
     a = w.shape
     v = torch.zeros(a)
     v = v + pow(2, n_bit-1 + maxi)
-    v = FloatNoGradient(v)
+    v = FloatNoGradient.apply(v)
     v = v.cuda()
     w.data.copy_(w.data/v)
-    w = IntNoGradient(w)
-    w = FloatNoGradient(w)
+    w = IntNoGradient.apply(w)
+    w = FloatNoGradient.apply(w)
     w.data.copy_(w.data/v)
     return w
 

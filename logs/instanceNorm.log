@@ -1,0 +1,15 @@
+Namespace(activ='tanh', auto_augment=False, batch_size=100, bias=False, checkpoint_freq=0, cutout=0, dataset='cifar10', epochs=200, gamma=0.5, history=5, iter=25, lr=0.1, min_lr=1e-05, model='resthrifty', momentum=0.9, name='instanceNorm', nesterov=True, optimizer='sgd', patience=5, pool=[5], resume=None, seed=580616, size=64, test_batch_size=1000, weight_decay=0.0005)Parameters : 37664
+*******
+lr : 0.1, train_acc : 0.17652, test_loss : 2.078774768066406, Epoch : 1, test_acc : 0.2232, train_loss : 2.1991965770721436, 
+lr : 0.1, train_acc : 0.15902, test_loss : 2.22411201171875, Epoch : 2, test_acc : 0.1923, train_loss : 2.293877601623535, 
+lr : 0.1, train_acc : 0.15152, test_loss : 2.173814501953125, Epoch : 3, test_acc : 0.2007, train_loss : 2.284985065460205, 
+lr : 0.1, train_acc : 0.20062, test_loss : 2.3505692626953123, Epoch : 4, test_acc : 0.1996, train_loss : 2.362916946411133, 
+lr : 0.1, train_acc : 0.20108, test_loss : 2.225098046875, Epoch : 5, test_acc : 0.1828, train_loss : 2.1203415393829346, 
+lr : 0.1, train_acc : 0.21124, test_loss : 2.1989177001953126, Epoch : 6, test_acc : 0.2089, train_loss : 2.180126428604126, 
+lr : 0.1, train_acc : 0.17928, test_loss : 2.2771095458984374, Epoch : 7, test_acc : 0.2043, train_loss : 2.4231131076812744, 
+lr : 0.05, train_acc : 0.22934, test_loss : 2.1046727294921874, Epoch : 8, test_acc : 0.2365, train_loss : 1.925144910812378, 
+lr : 0.05, train_acc : 0.23758, test_loss : 2.0171792724609374, Epoch : 9, test_acc : 0.2631, train_loss : 1.985588788986206, 
+lr : 0.05, train_acc : 0.23986, test_loss : 2.002092529296875, Epoch : 10, test_acc : 0.2607, train_loss : 2.072660207748413, 
+lr : 0.05, train_acc : 0.24076, test_loss : 2.0992062255859376, Epoch : 11, test_acc : 0.2258, train_loss : 2.2493796348571777, 
+lr : 0.05, train_acc : 0.24244, test_loss : 2.01179375, Epoch : 12, test_acc : 0.2645, train_loss : 2.0143463611602783, 
+lr : 0.05, train_acc : 0.249, test_loss : 2.0424458129882814, Epoch : 13, test_acc : 0.2524, train_loss : 2.0242931842803955, 

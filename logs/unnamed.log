@@ -1,0 +1,12 @@
+Namespace(activ='relu', auto_augment=False, batch_size=100, bias=False, checkpoint_freq=0, conv_mode='classic', cutout=0, dataset='cifar10', epochs=200, gamma=0.5, history=5, iter=25, lr=0.1, min_lr=1e-05, model='quantif', momentum=0.9, n_bits_activ=8, n_bits_weight=6, name='unnamed', nesterov=True, optimizer='sgd', patience=5, pool=[5], resume=None, seed=895376, size=64, test_batch_size=100, weight_decay=0.0005)
+*******
+Namespace(activ='relu', auto_augment=False, batch_size=100, bias=False, checkpoint_freq=0, conv_mode='classic', cutout=0, dataset='cifar10', epochs=200, gamma=0.5, history=5, iter=25, lr=0.1, min_lr=1e-05, model='quantif', momentum=0.9, n_bits_activ=8, n_bits_weight=6, name='unnamed', nesterov=True, optimizer='sgd', patience=5, pool=[5], resume=None, seed=155398, size=64, test_batch_size=100, weight_decay=0.0005)
+*******
+Namespace(activ='relu', auto_augment=False, batch_size=100, bias=False, checkpoint_freq=0, conv_mode='classic', cutout=0, dataset='cifar10', epochs=200, gamma=0.5, history=5, iter=25, lr=0.1, min_lr=1e-05, model='quantif', momentum=0.9, n_bits_activ=8, n_bits_weight=6, name='unnamed', nesterov=True, optimizer='sgd', patience=5, pool=[5], resume=None, seed=102995, size=64, test_batch_size=100, weight_decay=0.0005)
+*******
+Namespace(activ='relu', auto_augment=False, batch_size=100, bias=False, checkpoint_freq=0, conv_mode='classic', cutout=0, dataset='cifar10', epochs=200, gamma=0.5, history=5, iter=25, lr=0.1, min_lr=1e-05, model='quantif', momentum=0.9, n_bits_activ=8, n_bits_weight=6, name='unnamed', nesterov=True, optimizer='sgd', patience=5, pool=[5], resume=None, seed=911332, size=64, test_batch_size=100, weight_decay=0.0005)
+*******
+Namespace(activ='relu', auto_augment=False, batch_size=100, bias=False, checkpoint_freq=0, conv_mode='classic', cutout=0, dataset='cifar10', epochs=200, gamma=0.5, history=5, iter=25, lr=0.1, min_lr=1e-05, model='quantif', momentum=0.9, n_bits_activ=8, n_bits_weight=6, name='unnamed', nesterov=True, optimizer='sgd', patience=5, pool=[5], resume=None, seed=883457, size=64, test_batch_size=100, weight_decay=0.0005)
+*******
+Namespace(activ='relu', auto_augment=False, batch_size=100, bias=False, checkpoint_freq=0, conv_mode='classic', cutout=0, dataset='cifar10', epochs=200, gamma=0.5, history=5, iter=25, lr=0.1, min_lr=1e-05, model='quantif', momentum=0.9, n_bits_activ=8, n_bits_weight=6, name='unnamed', nesterov=True, optimizer='sgd', patience=5, pool=[5], resume=None, seed=868016, size=64, test_batch_size=100, weight_decay=0.0005)
+*******

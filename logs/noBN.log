@@ -1,0 +1,11 @@
+Namespace(activ='tanh', auto_augment=False, batch_size=100, bias=False, checkpoint_freq=0, cutout=0, dataset='cifar10', epochs=200, gamma=0.5, history=5, iter=30, lr=0.1, min_lr=1e-05, model='resthrifty', momentum=0.9, name='noBN', nesterov=True, optimizer='sgd', patience=5, pool=[6], resume=None, seed=306595, size=64, test_batch_size=1000, weight_decay=0.0005)Parameters : 37694
+*******
+test_loss : 2.3051409423828124, test_acc : 0.1, train_loss : 2.292356252670288, lr : 0.1, Epoch : 1, train_acc : 0.10064, 
+Namespace(activ='tanh', auto_augment=False, batch_size=100, bias=False, checkpoint_freq=0, cutout=0, dataset='cifar10', epochs=200, gamma=0.5, history=5, iter=30, lr=0.1, min_lr=1e-05, model='resthrifty', momentum=0.9, name='noBN', nesterov=True, optimizer='sgd', patience=5, pool=[6], resume=None, seed=84557, size=64, test_batch_size=1000, weight_decay=0.0005)Parameters : 37700
+*******
+Namespace(activ='tanh', auto_augment=False, batch_size=100, bias=False, checkpoint_freq=0, cutout=0, dataset='cifar10', epochs=200, gamma=0.5, history=5, iter=30, lr=0.1, min_lr=1e-05, model='resthrifty', momentum=0.9, name='noBN', nesterov=True, optimizer='sgd', patience=5, pool=[6], resume=None, seed=986581, size=64, test_batch_size=1000, weight_decay=0.0005)Parameters : 41534
+*******
+train_acc : 0.40558, test_acc : 0.4617, Epoch : 1, train_loss : 1.468002438545227, test_loss : 1.4631219848632813, lr : 0.1, 
+train_acc : 0.52758, test_acc : 0.5414, Epoch : 2, train_loss : 1.2145413160324097, test_loss : 1.2993385375976563, lr : 0.1, 
+train_acc : 0.5764, test_acc : 0.5925, Epoch : 3, train_loss : 1.2535041570663452, test_loss : 1.141355322265625, lr : 0.1, 
+train_acc : 0.60472, test_acc : 0.59, Epoch : 4, train_loss : 1.0325781106948853, test_loss : 1.1331171997070313, lr : 0.1, 
