@@ -18,41 +18,25 @@ from datasets import get_data_loaders
 from modules import *
 import utils
 
-class RoundNoGradient(torch.autograd.Function):
+class IntNoGradient(torch.autograd.Function):
 
 	@staticmethod
 	def forward(ctx, x):
-		return x.round()
+		return x.int()
 
 	@staticmethod
 	def backward(ctx, g):
 		return g
 
+class FloatNoGradient(torch.autograd.Function):
+    
+    @staticmethod
+	def forward(ctx, x):
+		return x.float()
 
-def min_max_quantize(x, bits):
-    assert bits >= 1, bits
-
-    if bits==1:
-        return torch.sign(x)
-
-    min_val, max_val = x.min(), x.max()
-
-    if isinstance(min_val, Variable):
-        max_val = float(max_val.data.cpu().numpy())
-        min_val = float(min_val.data.cpu().numpy())
-
-    if max_val-min_val<1e-8:
-        return x
-
-    input_rescale = (x - min_val) / (max_val - min_val)
-
-    n = math.pow(2.0, bits) - 1
-    # v = torch.floor(input_rescale * n + 0.5) / n
-    v = RoundNoGradient.apply(input_rescale * n + 0.5) / n
-
-    v =  v * (max_val - min_val) + min_val
-    return v
-
+	@staticmethod
+	def backward(ctx, g):
+		return g
 
 def maxWeight(weight):
     #liste_max = []
@@ -68,18 +52,17 @@ def maxWeight(weight):
         n+=1
     return n-1
 
-
 def quantifier(weight, n_bit):
     maxi=maxWeight(weight)
-    w = weight.clone().cuda() #self.target_modules[index]
+    w = weight.clone().cuda()
     a = w.shape
     v = torch.zeros(a)
     v = v + pow(2, n_bit-1 + maxi)
-    v = v.float()
+    v = FloatNoGradient(v)
     v = v.cuda()
     w.data.copy_(w.data/v)
-    w = w.int()
-    w = w.float()
+    w = IntNoGradient(w)
+    w = FloatNoGradient(w)
     w.data.copy_(w.data/v)
     return w
 
@@ -119,11 +102,14 @@ class QuantitizedRCNN(nn.Module):
 
         if self.conv_mode=="classic":
             self.Lconv = nn.Conv2d(n_filters, n_filters, kernel_size=3, stride=1, padding=1, bias=self.bias)
+        
         elif self.conv_mode=="mb1":
             self.Lconv = MBConv(n_filters, n_filters)
+        
         elif self.conv_mode=="mb2":
             print(n_filters)
             self.Lconv = MBConv(n_filters, n_filters//2)
+        
         elif self.conv_mode=="mb4":
             self.Lconv = MBConv(n_filters, n_filters//4)
 
