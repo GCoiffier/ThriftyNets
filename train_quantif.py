@@ -22,11 +22,11 @@ class IntNoGradient(torch.autograd.Function):
     
     @staticmethod
     def forward(ctx, x):
-        return x.int()
+        return x.int().float()
     
     @staticmethod
     def backward(ctx, g):
-        return g.int()
+        return g
 
 class FloatNoGradient(torch.autograd.Function):
     
@@ -36,7 +36,7 @@ class FloatNoGradient(torch.autograd.Function):
         
     @staticmethod
     def backward(ctx, g):
-        return g.float()
+        return g
 
 def maxWeight(weight):
     #liste_max = []
@@ -45,25 +45,25 @@ def maxWeight(weight):
 
     w = weight
     v = w.view(-1)
-    maxi = torch.max(torch.abs(v)).cpu().data.numpy()
+    maxi = torch.max(torch.abs(v)) #.cpu().data.numpy()
     n=0
     while(maxi<1):
         maxi=2
         n+=1
     return n-1
 
-def quantifier(weight, n_bit):
-    maxi=maxWeight(weight)
-    w = weight.clone().cuda()
+def quantifier(w, n_bit):
+    maxi=maxWeight(w)
+    #w = weight.clone().cuda()
     a = w.shape
     v = torch.zeros(a)
     v = v + pow(2, n_bit-1 + maxi)
-    v = FloatNoGradient.apply(v)
-    v = v.cuda()
-    w.data.copy_(w.data/v)
+    v = v.float() #FloatNoGradient.apply(v)
+    v = v.cuda()	
+    w = w*v
     w = IntNoGradient.apply(w)
-    w = FloatNoGradient.apply(w)
-    w.data.copy_(w.data/v)
+    #w = FloatNoGradient.apply(w)
+    w = w/v
     return w
 
 ## _____________________________________________________________________________________________
@@ -123,7 +123,7 @@ class QuantitizedRCNN(nn.Module):
         self.alpha = nn.Parameter(self.alpha)
 
         self.n_parameters = sum(p.numel() for p in self.parameters())
-        self.quantize()
+        #self.quantize()
 
     def forward(self, x, get_features=False):
         
@@ -231,6 +231,7 @@ if __name__ == '__main__':
         acc_score = 0
         loss = 0
         avg_loss = 0
+        model.quantize()
         for batch_idx, (data, target) in tqdm(enumerate(train_loader), 
                                               total=len(train_loader),
                                               position=1, 
