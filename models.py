@@ -55,7 +55,6 @@ class ThriftyNet(nn.Module):
         else:
             for x in pool_strategy:
                 self.pool_strategy[x] = True
-        print(self.pool_strategy)
 
         self.Lactiv = get_activ(activ)
         self.Lnormalization = nn.ModuleList([nn.BatchNorm2d(n_filters) for x in range(n_iter)])
@@ -65,7 +64,6 @@ class ThriftyNet(nn.Module):
         elif self.conv_mode=="mb1":
             self.Lconv = MBConv(n_filters, n_filters)
         elif self.conv_mode=="mb2":
-            print(n_filters)
             self.Lconv = MBConv(n_filters, n_filters//2)
         elif self.conv_mode=="mb4":
             self.Lconv = MBConv(n_filters, n_filters//4)

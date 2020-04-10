@@ -28,8 +28,25 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     torch.manual_seed(args.seed)
     train_loader, test_loader, metadata = get_data_loaders(args)
+
     model = get_model(args, metadata)
+    if args.n_params is not None:
+        n = model.n_parameters
+        if n<args.n_params:
+            while n<args.n_params:
+                args.size += 1
+                model = get_model(args, metadata)
+                n = model.n_parameters
+        if n>args.n_params:
+            while n>args.n_params:
+                args.size -= 1 
+                model = get_model(args,metadata)
+                n = model.n_parameters
+
     print("N parameters : ", model.n_parameters)
+    print("N filters : ", model.n_filters)
+    print("Pool strategy : ", model.pool_strategy)
+
     if args.resume is not None:
         model.load_state_dict(torch.load(args.resume)["state_dict"])
 
@@ -51,6 +68,7 @@ if __name__ == '__main__':
     with open("logs/{}.log".format(args.name), "a") as f:
         f.write(str(args))
         f.write("\nParameters : " + str(model.n_parameters))
+        f.write("\nFilters : " + str(model.n_filters))
         f.write("\n*******\n")
 
     print("-"*80 + "\n")

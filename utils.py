@@ -15,6 +15,7 @@ def args():
     parser.add_argument("-bias", "--bias", action="store_true")
     parser.add_argument("-pool", "--pool", nargs="+", type=int, default=[5])
     parser.add_argument("-conv-mode", "--conv-mode", type=str, default="classic")
+    parser.add_argument("-n-params", "--n-params", type=int, default=None)
 
     # Dataset and data augmentation
     parser.add_argument('-dataset', "--dataset", type=str, default="cifar10")
@@ -32,8 +33,8 @@ def args():
     parser.add_argument("-epochs", "--epochs", type=int, default=200)
 
     # Scheduler
-    parser.add_argument('--min-lr', type=float, default=1e-5)
-    parser.add_argument('--patience', type=int, default=5)
+    parser.add_argument('--min-lr', type=float, default=1e-4)
+    parser.add_argument('--patience', type=int, default=7)
     parser.add_argument('--gamma', type=float, default=0.5, help="LR decay factor")
 
     # Misc
