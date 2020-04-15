@@ -434,6 +434,8 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
         [batch_time, data_time, losses, top1, top5],
         prefix="Epoch: [{}]".format(epoch))
 
+    loader = iter(train_loader)
+
     # switch to train mode
     model.train()
     end = time.time()
@@ -445,7 +447,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
         data_time.update(time.time() - end)
         loss = 0
         for j in range(nmb):
-            (images, target_mb) = train_loader[i*nmb + j]
+            (images, target_mb) = next(loader)
             if args.gpu is not None:
                 images = images.cuda(args.gpu, non_blocking=True)
                 target_mb = target_mb.cuda(args.gpu, non_blocking=True)
