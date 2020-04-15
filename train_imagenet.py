@@ -455,7 +455,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
         mbs = args.batch_size// args.n_mini_batch
         for mbi in range(args.n_mini_batch):
 
-            images_mbatch, target_mbatch = images[mbs*mbi:mbs*(mbi+1), ...], target_mbatch[mbs*mbi:mbs*(mbi+1), ...]
+            images_mbatch, target_mbatch = images[mbs*mbi:mbs*(mbi+1), ...], target[mbs*mbi:mbs*(mbi+1), ...]
 
             # compute output
             output[mbs*mbi:mbs*(mbi+1)] = model(images_mbatch)
