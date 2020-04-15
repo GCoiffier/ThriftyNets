@@ -458,8 +458,9 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
             images_mbatch, target_mbatch = images[mbs*mbi:mbs*(mbi+1), ...], target[mbs*mbi:mbs*(mbi+1), ...]
 
             # compute output
-            output[mbs*mbi:mbs*(mbi+1), ...] = model(images_mbatch)
-            loss += criterion(output, target_mbatch)
+            output_mbatch = model(images_mbatch)
+            output[mbs*mbi:mbs*(mbi+1), ...] = output_mbatch
+            loss += criterion(output_mbatch, target_mbatch)
 
         # measure accuracy and record loss
         acc1, acc5 = accuracy(output, target, topk=(1, 5))
