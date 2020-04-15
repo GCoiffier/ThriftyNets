@@ -464,6 +464,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
+        loss = loss/ nmb
         loss.backward()
         optimizer.step()
 
