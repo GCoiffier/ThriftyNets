@@ -445,7 +445,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
     for i in range( len(train_loader) // nmb):
         # measure data loading time
         data_time.update(time.time() - end)
-        loss = 0
+        loss = None
         for j in range(nmb):
             (images, target_mb) = next(loader)
             if args.gpu is not None:
@@ -454,7 +454,8 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
 
             # compute output
             output_mb = model(images)
-            loss += criterion(output_mb, target_mb)
+            loss_mb = criterion(output_mb, target_mb)
+            loss = loss_mb if loss is None else loss+loss_mb
 
             # measure accuracy and record loss
             acc1, acc5 = accuracy(output_mb, target_mb, topk=(1, 5))
