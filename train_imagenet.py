@@ -448,10 +448,8 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
         loss = None
         for j in range(nmb):
             (images, target_mb) = next(loader)
-            if args.gpu is not None:
-                images = images.cuda(args.gpu, non_blocking=True)
-                target_mb = target_mb.cuda(args.gpu, non_blocking=True)
-                print("YOLO")
+            images = images.cuda(non_blocking=True)
+            target_mb = target_mb.cuda(non_blocking=True)
 
             # compute output
             output_mb = model(images)
