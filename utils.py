@@ -4,7 +4,7 @@ import random
 import argparse
 
 def args():
-    parser = argparse.ArgumentParser(description='ArchiSearch Guillaume IMT Atlantique')
+    parser = argparse.ArgumentParser(description='ThritfyNets')
 
     # Model settings
     parser.add_argument('-model', "--model", type=str, default="res_thrifty")

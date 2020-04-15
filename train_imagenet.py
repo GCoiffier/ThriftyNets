@@ -197,12 +197,16 @@ parser.add_argument('-b', '--batch-size', default=256, type=int,
                     help='mini-batch size (default: 256), this is the total '
                          'batch size of all GPUs on the current node when '
                          'using Data Parallel or Distributed Data Parallel')
+
+parser.add_argument("-n-mini-batch", "--n-mini-batch", type=int, default=6)
+
 parser.add_argument('--lr', '--learning-rate', default=0.1, type=float,
                     metavar='LR', help='initial learning rate', dest='lr')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
-parser.add_argument('--wd', '--weight-decay', default=1e-4, type=float,
-                    metavar='W', help='weight decay (default: 1e-4)',
+
+parser.add_argument('--wd', '--weight-decay', default=5e-4, type=float,
+                    metavar='W', help='weight decay (default: 5e-4)',
                     dest='weight_decay')
 parser.add_argument('-p', '--print-freq', default=10, type=int,
                     metavar='N', help='print frequency (default: 10)')
@@ -234,6 +238,7 @@ parser.add_argument("-n-filters", "--n-filters", default=1024, type=int)
 parser.add_argument("-iter", "--iter", default=30, type=int)
 parser.add_argument("-history", "--history", default=5, type=int)
 parser.add_argument("-conv-mode", "--conv-mode", default="mb1", type=str, choices=["mb1", "mb2", "mb4", "classic"])
+parser.add_argument("-logfile", "--logfile", default="imgnet_log.txt", type=str)
 
 best_acc1 = 0
 
@@ -437,6 +442,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
 
     end = time.time()
     for i, (images, target) in enumerate(train_loader):
+
         # measure data loading time
         data_time.update(time.time() - end)
 
@@ -444,9 +450,16 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
             images = images.cuda(args.gpu, non_blocking=True)
         target = target.cuda(args.gpu, non_blocking=True)
 
-        # compute output
-        output = model(images)
-        loss = criterion(output, target)
+        loss = 0
+        output = torch.zeros(args.batch_size)
+        mbs = args.batch_size// args.n_mini_batch
+        for mbi in range(args.n_mini_batch):
+
+            images_mbatch, target_mbatch = images[mbs*mbi:mbs*(mbi+1), ...], target_mbatch[mbs*mbi:mbs*(mbi+1), ...]
+
+            # compute output
+            output[mbs*mbi:mbs*(mbi+1)] = model(images_mbatch)
+            loss += criterion(output, target_mbatch)
 
         # measure accuracy and record loss
         acc1, acc5 = accuracy(output, target, topk=(1, 5))
@@ -506,6 +519,9 @@ def validate(val_loader, model, criterion, args):
 
         # TODO: this should also be done with the ProgressMeter
         print(' * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f}'
+              .format(top1=top1, top5=top5))
+        with open(args.logfile, "w") as f:
+            f.write('* Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f}\n'
               .format(top1=top1, top5=top5))
 
     return top1.avg
