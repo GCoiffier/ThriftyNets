@@ -8,13 +8,13 @@ def args():
 
     # Model settings
     parser.add_argument('-model', "--model", type=str, default="res_thrifty")
-    parser.add_argument('-size', "--size", type=int, default=64)
-    parser.add_argument('-iter', "--iter", type=int, default=25)
+    parser.add_argument('-size', "--size", type=int, default=160)
+    parser.add_argument('-iter', "--iter", type=int, default=30)
     parser.add_argument("-activ", "--activ", type=str, default="tanh")
     parser.add_argument("-history", "--history", type=int, default=5)
     parser.add_argument("-bias", "--bias", action="store_true")
-    parser.add_argument("-pool", "--pool", nargs="+", type=int, default=[5])
-    parser.add_argument("-conv-mode", "--conv-mode", type=str, default="classic")
+    parser.add_argument("-pool", "--pool", nargs="+", type=int, default=[7])
+    parser.add_argument("-conv-mode", "--conv-mode", type=str, default="mb1")
     parser.add_argument("-n-params", "--n-params", type=int, default=None)
 
     # Dataset and data augmentation
