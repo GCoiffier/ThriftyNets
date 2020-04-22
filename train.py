@@ -30,7 +30,7 @@ if __name__ == '__main__':
     train_loader, test_loader, metadata = get_data_loaders(args)
 
     model = get_model(args, metadata)
-    if args.n_params is not None:
+    if args.n_params is not None and args.model not in ["block_thrifty", "blockthrifty"]:
         n = model.n_parameters
         if n<args.n_params:
             while n<args.n_params:
@@ -133,8 +133,8 @@ if __name__ == '__main__':
 
         if args.checkpoint_freq != 0 and epoch%args.checkpoint_freq == 0:
             name = args.name+ "_e" + str(epoch) + "_acc{:d}.model".format(int(10000*logger["test_acc"]))
-            model.save(name)
+            torch.save(model.state_dict(), name)
 
         logger.log()
 
-    model.save(args.name+".model")
+    torch.save(model.state_dict(), args.name+".model")

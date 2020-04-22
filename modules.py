@@ -81,3 +81,72 @@ class MBConv(nn.Module):
 
     def forward(self, x):
         return self.conv2(self.conv1(x))
+
+
+
+class ThriftyBlock(nn.Module):
+    def __init__(self, n_filters, n_iter, n_history, pool_strategy, conv_mode="classic", activ="relu", bias=False):
+        super(ThriftyBlock, self).__init__()
+        self.n_filters = n_filters
+        self.n_iter = n_iter
+        self.n_history = n_history
+        self.activ = activ
+        self.conv_mode = conv_mode
+        self.bias = bias
+        
+        self.pool_strategy = [False]*self.n_iter
+        assert isinstance(pool_strategy, list) or isinstance(pool_strategy, tuple)
+        if len(pool_strategy)==1:
+            freq = pool_strategy[0]
+            for i in range(self.n_iter):
+                if (i%freq == freq-1):
+                    self.pool_strategy[i] = True
+        else:
+            for x in pool_strategy:
+                self.pool_strategy[x] = True
+
+        self.Lactiv = get_activ(activ)
+        self.Lnormalization = nn.ModuleList([nn.BatchNorm2d(n_filters) for x in range(n_iter)])
+
+        if self.conv_mode=="classic":
+            self.Lconv = nn.Conv2d(n_filters, n_filters, kernel_size=3, stride=1, padding=1, bias=self.bias)
+        elif self.conv_mode=="mb1":
+            self.Lconv = MBConv(n_filters, n_filters, bias=self.bias)
+        elif self.conv_mode=="mb2":
+            self.Lconv = MBConv(n_filters, n_filters//2, bias=self.bias)
+        elif self.conv_mode=="mb4":
+            self.Lconv = MBConv(n_filters, n_filters//4, bias=self.bias)
+        self.activ = get_activ(activ)
+        
+        self.alpha = torch.zeros((n_iter, n_history+1))
+        for t in range(n_iter):
+            self.alpha[t,0] = 0.1
+            self.alpha[t,1] = 0.9
+        self.alpha = nn.Parameter(self.alpha)
+
+        self.n_parameters = sum(p.numel() for p in self.parameters())
+
+
+    def forward(self, x):
+        hist = [None for _ in range(self.n_history-1)] + [x]
+
+        for t in range(self.n_iter):
+            a = self.Lconv(hist[-1])
+            a = self.Lactiv(a)
+            a = self.alpha[t,0] * a
+            for i, x in enumerate(hist):
+                if x is not None:
+                    a = a + self.alpha[t,i+1] * x
+
+            a = self.Lnormalization[t](a)
+            
+            for i in range(1, self.n_history-1):
+                hist[i] = hist[i+1]
+            hist[self.n_history-1] = a
+
+            if self.pool_strategy[t]:
+                for i in range(len(hist)):
+                    if hist[i] is not None:
+                        hist[i] = F.max_pool2d(hist[i], 2)
+
+            return hist[-1]
