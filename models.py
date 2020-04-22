@@ -29,7 +29,7 @@ def get_model(args, metadata):
     
     elif model_name in ["block_thrifty", "blockthrifty"]:
         return ThriftyNet_3State(metadata["input_shape"], metadata["n_classes"], 
-                                 n_history=args.n_history, conv_mode=args.conv_mode,
+                                 n_history=args.history, conv_mode=args.conv_mode,
                                  activ=args.activ, bias=args.bias)
 
     else:
@@ -196,8 +196,10 @@ class ResThriftyNet(ThriftyNet):
 
 class ThriftyBlock(nn.Module):
     def __init__(self, n_filters, n_iter, n_history, pool_strategy, conv_mode="classic", activ="relu", bias=False):
+        super(ThriftyBlock, self).__init__()
         self.n_filters = n_filters
         self.n_iter = n_iter
+        self.n_history = n_history
         self.activ = activ
         self.conv_mode = conv_mode
         self.bias = bias
@@ -270,9 +272,12 @@ class ThriftyNet_3State(nn.Module):
         self.bias = bias
         self.n_history = n_history
 
+        self.n_filters = "32 - 128 - 256"
+        self.pool_strategy = [9, 15, 20, 25, 30]
+
         self.block1 = ThriftyBlock(32, 10, 5, [9], conv_mode=conv_mode, activ=activ, bias=bias)
         self.block2 = ThriftyBlock(128, 12, 5, [6,11], conv_mode=conv_mode, activ=activ, bias=bias)
-        self.block2 = ThriftyBlock(256, 12, 5, [6,11], conv_mode=conv_mode, activ=activ, bias=bias)
+        self.block3 = ThriftyBlock(256, 12, 5, [6,11], conv_mode=conv_mode, activ=activ, bias=bias)
 
         self.LOutput = nn.Linear(256, n_classes)
 
@@ -282,9 +287,9 @@ class ThriftyNet_3State(nn.Module):
         x0 = F.pad(x, (0, 0, 0, 0, 0, 32-3))
         x1 = self.block1(x0)
         x1 = F.pad(x1, (0, 0, 0, 0, 0, 128-32))
-        x2 = self.block(x1)
+        x2 = self.block2(x1)
         x2 = F.pad(x2, (0, 0, 0, 0, 0, 256-128))
-        x3 = self.block2(x2)
+        x3 = self.block3(x2)
         if x3.size()[-1]>1:
             out = F.adaptive_max_pool2d(x3, (1,1))[:,:,0,0]
         else:

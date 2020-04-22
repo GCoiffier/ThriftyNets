@@ -181,7 +181,7 @@ class QuantitizedRCNN(nn.Module):
 if __name__ == '__main__':
 
     parser = utils.args()
-    parser.add_argument("-n-bits-weight", "--n-bits-weight", default=6, type=int)
+    parser.add_argument("-n-bits-weight", "--n-bits-weight", default=8, type=int)
     parser.add_argument("-n-bits-activ", "--n-bits-activ", default=8, type=int)
     args = parser.parse_args()
     args.model = "quantif"
@@ -244,9 +244,9 @@ if __name__ == '__main__':
             output = model(data)
             loss = F.cross_entropy(output, target)
             avg_loss += loss.item()
+            model.unquantize()
             loss.backward()
             
-            model.unquantize()
             optimizer.step()
             model.quantize()
 

@@ -74,10 +74,10 @@ def get_activ(activ):
     
 
 class MBConv(nn.Module):
-    def __init__(self, in_maps, compress):
+    def __init__(self, in_maps, compress, bias=False):
         super(MBConv, self).__init__()
-        self.conv1 = nn.Conv2d(in_maps, compress, kernel_size = 3, padding = 1, bias = False, groups = compress)
-        self.conv2 = nn.Conv2d(compress, in_maps, kernel_size = 1, padding = 0, bias = False)
+        self.conv1 = nn.Conv2d(in_maps, compress, kernel_size = 3, padding = 1, bias = bias, groups = compress)
+        self.conv2 = nn.Conv2d(compress, in_maps, kernel_size = 1, padding = 0, bias = bias)
 
     def forward(self, x):
         return self.conv2(self.conv1(x))
