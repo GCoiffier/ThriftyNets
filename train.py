@@ -29,17 +29,25 @@ if __name__ == '__main__':
     torch.manual_seed(args.seed)
     train_loader, test_loader, metadata = get_data_loaders(args)
 
+    if args.topk is not None:
+        topk = tuple(args.topk)
+    else:
+        if args.dataset=="imagenet":
+            topk=(1,5)
+        else:
+            topk=(1,)
+
     model = get_model(args, metadata)
     if args.n_params is not None and args.model not in ["block_thrifty", "blockthrifty"]:
         n = model.n_parameters
         if n<args.n_params:
             while n<args.n_params:
-                args.size += 1
+                args.filters += 1
                 model = get_model(args, metadata)
                 n = model.n_parameters
         if n>args.n_params:
             while n>args.n_params:
-                args.size -= 1 
+                args.filters -= 1 
                 model = get_model(args,metadata)
                 n = model.n_parameters
 
@@ -53,7 +61,7 @@ if __name__ == '__main__':
     model = model.to(device)
     scheduler = None
     if args.optimizer=="sgd":
-        optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+        optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
         scheduler = ReduceLROnPlateau(optimizer, factor=args.gamma, patience=args.patience, min_lr=args.min_lr)
         # scheduler = StepLR(optimizer, 100, gamma=0.1)
     elif args.optimizer=="adam":
@@ -73,7 +81,7 @@ if __name__ == '__main__':
 
     print("-"*80 + "\n")
     test_loss = 0
-    test_acc = 0
+    test_acc = torch.zeros(len(topk))
     lr = optimizer.state_dict()["param_groups"][0]["lr"]
     for epoch in range(1, args.epochs + 1):
         t0 = time.time()
@@ -81,8 +89,7 @@ if __name__ == '__main__':
 
         ## TRAINING
         model.train()
-        accuracy = 0
-        acc_score = 0
+        accuracies = torch.zeros(len(topk))
         loss = 0
         avg_loss = 0
         for batch_idx, (data, target) in tqdm(enumerate(train_loader), 
@@ -99,32 +106,36 @@ if __name__ == '__main__':
             avg_loss += loss.item()
             loss.backward()
             optimizer.step()
-            pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
-            accuracy += pred.eq(target.view_as(pred)).sum().item()
-            acc_score = accuracy / ((1+batch_idx) * args.batch_size)
-            tqdm.write(prefix+"Epoch {}/{}, Test_loss : {:.3f}, Test_acc : {:.4f}, Train_Loss : {:.3f}, Train_Acc : {:.4f}, LR : {:.1E}".format(
-                        epoch, args.epochs, test_loss, test_acc, avg_loss/(1+batch_idx), acc_score, lr))
+            accuracies += utils.accuracy(output, target, topk=topk)
+            acc_score = accuracies / (1+batch_idx)
 
-        logger.update({"train_loss" : loss.item(), "train_acc" : acc_score})
+            tqdm_log = prefix+"Epoch {}/{}, LR: {:.1E}, Train_Loss: {:.3f}, Test_loss: {:.3f}, ".format(epoch, args.epochs, lr, avg_loss/(1+batch_idx), test_loss)
+            for i,k in enumerate(topk):
+                tqdm_log += "Train_acc(top{}): {:.3f}, Test_acc(top{}): {:.3f}, ".format(k, acc_score[i], k, test_acc[i])
+            tqdm.write(tqdm_log)
+
         logger.update({"epoch_time" : (time.time() - t0)/60 })
+        logger.update({"train_loss" : loss.item()})
+        for i,k in enumerate(topk):
+            logger.update({"train_acc(top{})".format(k) : acc_score[i]})
 
         ## TESTING
         test_loss = 0
-        test_acc = 0
-        correct = 0
+        test_acc = torch.zeros(len(topk))
         model.eval()
         with torch.no_grad():
             for data, target in test_loader:
                 data, target = data.to(device), target.to(device)
                 output = model(data)
                 test_loss += F.cross_entropy(output, target, reduction='sum').item()  # sum up batch loss
-                pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
-                correct += pred.eq(target.view_as(pred)).sum().item()
+                test_acc += utils.accuracy(output, target, topk=topk)
 
         test_loss /= len(test_loader.dataset)
-        test_acc = correct / len(test_loader.dataset)
+        test_acc /= len(test_loader)
 
-        logger.update({ "test_loss" : test_loss, "test_acc" : test_acc })
+        logger.update({"test_loss" : test_loss})
+        for i,k in enumerate(topk):
+            logger.update({"train_acc(top{})".format(k) : test_acc[i]})
         
         if scheduler is not None:
             scheduler.step(logger["test_loss"])
@@ -132,7 +143,7 @@ if __name__ == '__main__':
         print()
 
         if args.checkpoint_freq != 0 and epoch%args.checkpoint_freq == 0:
-            name = args.name+ "_e" + str(epoch) + "_acc{:d}.model".format(int(10000*logger["test_acc"]))
+            name = args.name+ "_e" + str(epoch) + "_acc{:d}.model".format(int(10000*logger["test_acc(top1)"]))
             torch.save(model.state_dict(), name)
 
         logger.log()

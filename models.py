@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision.models import resnet
 
 import numpy as np
 from modules import *
-
 from functools import partial
 
 """
@@ -19,11 +19,11 @@ metadata : dict
 def get_model(args, metadata):
     model_name = args.model.lower()    
     if model_name=="thrifty":
-        return ThriftyNet(metadata["input_shape"], metadata["n_classes"], args.size, 
+        return ThriftyNet(metadata["input_shape"], metadata["n_classes"], args.filters, 
                         args.iter, args.pool, args.activ, args.conv_mode, args.bias)
 
     elif model_name in ["res_thrifty", "resthrifty"]:
-        return ResThriftyNet(metadata["input_shape"], metadata["n_classes"], n_filters=args.size, 
+        return ResThriftyNet(metadata["input_shape"], metadata["n_classes"], n_filters=args.filters, 
                             n_iter=args.iter, n_history=args.history, pool_strategy=args.pool, 
                             activ=args.activ, conv_mode=args.conv_mode, bias=args.bias)
     
@@ -31,6 +31,8 @@ def get_model(args, metadata):
         return ThriftyNet_3State(metadata["input_shape"], metadata["n_classes"], 
                                  n_history=args.history, conv_mode=args.conv_mode,
                                  activ=args.activ, bias=args.bias)
+    elif model_name in ["embedded_thrifty", "embeddedthrifty"]:
+        return EmbeddedThriftyNet(args.filters, args.iter)
 
     else:
         raise Exception("Model type was not recognized")
@@ -47,6 +49,13 @@ class ThriftyNet(nn.Module):
         self.LOutput = nn.Linear(n_filters, n_classes)
         self.n_parameters = sum(p.numel() for p in self.parameters())
 
+        @property
+        def n_filters(self):
+            return self.Lblock.n_filters
+
+        @property
+        def pool_strategy(self):
+            return self.Lblock.pool_strategy
 
     def forward(self, x):
         x = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
@@ -58,7 +67,7 @@ class ThriftyNet(nn.Module):
         return self.LOutput(out)
 
 
-class ResThriftyNet(ThriftyNet):
+class ResThriftyNet(nn.Module):
     """
     Residual Thrifty Network
     """
@@ -70,6 +79,13 @@ class ResThriftyNet(ThriftyNet):
         self.LOutput = nn.Linear(n_filters, n_classes)
         self.n_parameters = sum(p.numel() for p in self.parameters())
 
+    @property
+    def n_filters(self):
+        return self.Lblock.n_filters
+
+    @property
+    def pool_strategy(self):
+        return self.Lblock.pool_strategy
 
     def forward(self, x):
         x = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
@@ -117,4 +133,29 @@ class ThriftyNet_3State(nn.Module):
             out = F.adaptive_max_pool2d(x3, (1,1))[:,:,0,0]
         else:
             out = x3
+        return self.LOutput(out)
+
+class EmbeddedThriftyNet(nn.Module):
+    """
+    The first blocks of a Resnet, followed by a Thrifty block
+    """
+
+    def __init__(self, n_filters, n_iter, n_history, pool_strategy, activ="relu", conv_mode="classic", bias=False):
+        super(EmbeddedThriftyNet, self).__init__()
+        self.embed_shape = (128,28,28) # output shape of the embedder
+        
+        self.Lembed = ResNetEmbedder(resnet.BasicBlock, [3, 4])
+        self.Lthrifty = ThriftyBlock(n_filters, n_iter, n_history, pool_strategy,conv_mode=conv_mode, activ=activ, bias=bias)
+        self.LOutput = nn.Linear(n_filters, self.n_classes)
+
+        self.n_parameters = sum(p.numel() for p in self.parameters())
+        print("Embedding parameters: ", self.Lembed.n_parameters)
+        print("Thrifty parameters: ", self.Lthrifty.n_parameters)
+        print("Total parameters: ", self.n_parameters)
+
+    def forward(self, x):        
+        x = self.Lembed(x)
+        x = F.pad(x, (2, 2, 2, 2, 0, self.n_filters - self.embed_shape[0]))
+        x = self.Lthrifty(x) 
+        out = F.adaptive_max_pool2d(x, (1,1))[:,:,0,0]
         return self.LOutput(out)

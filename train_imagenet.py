@@ -18,164 +18,8 @@ import torch.utils.data
 import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
-from torchvision.models import resnet
 
-from modules import MBConv
-
-## ______________________________________________________________________________________
-
-class ResNetEmbedder(nn.Module):
-
-    def __init__(self, block, layers, num_classes=1000):
-        self.inplanes = 64
-        super(ResNetEmbedder, self).__init__()
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
-                               bias=False)
-        self.bn1 = nn.BatchNorm2d(64)
-        self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
-        """
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
-        self.avgpool = nn.AvgPool2d(7, stride=1)
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
-        """
-
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
-            elif isinstance(m, nn.BatchNorm2d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
-
-        self.n_parameters = sum(p.numel() for p in self.parameters())
-        print("Embedding :", self.n_parameters)
-
-    def _make_layer(self, block, planes, blocks, stride=1):
-        downsample = None
-        if stride != 1 or self.inplanes != planes * block.expansion:
-            downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes * block.expansion,
-                          kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(planes * block.expansion),
-            )
-
-        layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample))
-        self.inplanes = planes * block.expansion
-        for i in range(1, blocks):
-            layers.append(block(self.inplanes, planes))
-
-        return nn.Sequential(*layers)
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
-
-        x = self.layer1(x)
-        x = self.layer2(x)
-        return x
-        """
-        x = self.layer3(x)
-        x = self.layer4(x)
-
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        x = self.fc(x)
-
-        return x
-        """
-
-class ResThriftyNet(nn.Module):
-
-    def __init__(self, n_filters, n_iter, n_history, pool_strategy, activ="relu", conv_mode="classic", bias=False):
-        super(ResThriftyNet, self).__init__()
-        
-        self.Lembed = ResNetEmbedder(resnet.BasicBlock, [3, 4])
-
-        self.input_shape = (128,28,28) # output shape of the embedder
-
-        self.n_classes = 1000
-        self.n_filters = n_filters
-        self.n_iter = n_iter
-        self.activ = activ
-        self.conv_mode = conv_mode
-        self.bias = bias
-        self.n_history = n_history
-        
-        self.alpha = torch.zeros((n_iter, n_history+1))
-        for t in range(n_iter):
-            self.alpha[t,0] = 0.1
-            self.alpha[t,1] = 0.9
-        self.alpha = nn.Parameter(self.alpha)
-
-        self.pool_strategy = [False]*self.n_iter
-        assert isinstance(pool_strategy, list) or isinstance(pool_strategy, tuple)
-        if len(pool_strategy)==1:
-            freq = pool_strategy[0]
-            for i in range(self.n_iter):
-                if (i%freq == freq-1):
-                    self.pool_strategy[i] = True
-        else:
-            for x in pool_strategy:
-                self.pool_strategy[x] = True
-        print(self.pool_strategy)
-
-        self.Lactiv = F.relu
-        self.Lnormalization = nn.ModuleList([nn.BatchNorm2d(n_filters) for x in range(n_iter)])
-
-        if self.conv_mode=="classic":
-            self.Lconv = nn.Conv2d(n_filters, n_filters, kernel_size=3, stride=1, padding=1, bias=self.bias)
-        elif self.conv_mode=="mb1":
-            self.Lconv = MBConv(n_filters, n_filters)
-        elif self.conv_mode=="mb2":
-            print(n_filters)
-            self.Lconv = MBConv(n_filters, n_filters//2)
-        elif self.conv_mode=="mb4":
-            self.Lconv = MBConv(n_filters, n_filters//4)
-
-        self.LOutput = nn.Linear(n_filters, self.n_classes)
-
-        self.n_parameters = sum(p.numel() for p in self.parameters())
-        print("Thrifty :", self.n_parameters - self.Lembed.n_parameters)
-
-    def forward(self, x, get_features=False):
-        
-        x = self.Lembed(x)
-        x0 = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
-        
-        hist = [None for _ in range(self.n_history-1)] + [x0]
-
-        for t in range(self.n_iter):
-            a = self.Lconv(hist[-1])
-            a = self.Lactiv(a)
-            a = self.alpha[t,0] * a
-            for i, x in enumerate(hist):
-                if x is not None:
-                    a = a + self.alpha[t,i+1] * x
-
-            a = self.Lnormalization[t](a)
-            
-            for i in range(1, self.n_history-1):
-                hist[i] = hist[i+1]
-            hist[self.n_history-1] = a
-
-            if self.pool_strategy[t]:
-                for i in range(len(hist)):
-                    if hist[i] is not None:
-                        hist[i] = F.max_pool2d(hist[i], 2)
-
-        out = F.adaptive_max_pool2d(hist[-1], (1,1))[:,:,0,0]
-        if get_features:
-            return out, self.LOutput(out)
-        else:
-            return self.LOutput(out)
-
+from models import *
 
 ## ______________________________________________________________________________________
 
@@ -195,7 +39,6 @@ parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
 
 
 parser.add_argument('-b', '--mini-batch-size', default=32, type=int, metavar='N')
-parser.add_argument("-n-mini-batch", "--n-mini-batch", type=int, default=8)
 
 parser.add_argument('--lr', '--learning-rate', default=0.1, type=float,
                     metavar='LR', help='initial learning rate', dest='lr')
@@ -575,23 +418,6 @@ def adjust_learning_rate(optimizer, epoch, args):
     lr = args.lr * (0.1 ** (epoch // 30))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
-
-
-def accuracy(output, target, topk=(1,)):
-    """Computes the accuracy over the k top predictions for the specified values of k"""
-    with torch.no_grad():
-        maxk = max(topk)
-        batch_size = target.size(0)
-
-        _, pred = output.topk(maxk, 1, True, True)
-        pred = pred.t()
-        correct = pred.eq(target.view(1, -1).expand_as(pred))
-
-        res = []
-        for k in topk:
-            correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
-            res.append(correct_k.mul_(100.0 / batch_size))
-        return res
 
 
 if __name__ == '__main__':
