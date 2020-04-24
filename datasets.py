@@ -6,8 +6,8 @@ import numpy as np
 from PIL import Image
 from autoaugment import *
 
+# Datasets are downloaded in your home folder. Change DATA_PATH to change download destination
 DATA_PATH = "~/.torch_datasets"
-MINI_IMAGENET_PATH = os.path.join(DATA_PATH, "miniImagenet")
 
 def load_mnist(args, **kwargs):
     transform = transforms.Compose([
@@ -171,7 +171,7 @@ class MiniImageNet(torch.utils.data.Dataset):
         return len(self.train_ex) if self.train else len(self.test_ex)
 
 
-def load_miniImageNet(args, **kwargs):
+def load_miniImageNet(miniimgnet_path, args, **kwargs):
     
     if args.auto_augment:
         transform_train = transforms.Compose([
@@ -195,12 +195,12 @@ def load_miniImageNet(args, **kwargs):
                              np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]))])
 
     train_loader = torch.utils.data.DataLoader(
-        MiniImageNet(MINI_IMAGENET_PATH, train=True, transform=transform_train),
+        MiniImageNet(miniimgnet_path, train=True, transform=transform_train),
         batch_size=args.batch_size, shuffle=True, **kwargs
     )
 
     test_loader = torch.utils.data.DataLoader(
-        MiniImageNet(MINI_IMAGENET_PATH, train=False, transform=transform_test),
+        MiniImageNet(miniimgnet_path, train=False, transform=transform_test),
         batch_size=args.batch_size, shuffle=True, **kwargs
     )
 
@@ -259,7 +259,7 @@ def load_imageNet(imagenet_path, args, **kwargs):
 
 def get_data_loaders(args, **kwargs):
 
-    dataset_name = args.dataset.lower()
+    dataset_name = args.dataset[0].lower()
 
     if dataset_name == "mnist":
         return load_mnist(args, **kwargs)
@@ -272,9 +272,16 @@ def get_data_loaders(args, **kwargs):
 
     elif dataset_name == "cifar100":
         return load_cifar100(args, **kwargs)
-       
+    
     elif dataset_name == "miniimagenet":
-        return load_miniImageNet(args, **kwargs)
+        if len(args.dataset)<2:
+            raise Exception("Please specify root folder : `-dataset miniimagenet path/to/miniimagenet/folder/")
+        return load_miniImageNet(args.dataset[1], args, **kwargs)
+
+    elif dataset_name == "imagenet":
+        if len(args.dataset)<2:
+            raise Exception("Please specify root folder : `-dataset imagenet path/to/imagenet/folder/")
+        return load_imageNet(args.dataset[1], args, **kwargs)
 
     else :
         raise Exception("Dataset '{}' is no recognized dataset. Could not load any data.".format(args.dataset))
