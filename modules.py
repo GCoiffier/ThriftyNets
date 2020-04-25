@@ -149,7 +149,7 @@ class ThriftyBlock(nn.Module):
                     if hist[i] is not None:
                         hist[i] = F.max_pool2d(hist[i], 2)
 
-            return hist[-1]
+        return hist[-1]
 
 
 class ResNetEmbedder(nn.Module):

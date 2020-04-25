@@ -18,7 +18,7 @@ def args():
     parser.add_argument('-n-params', "--n-params", type=int, default=None)
 
     # Dataset and data augmentation
-    parser.add_argument('-dataset', "--dataset", type=str, default="cifar10", nargs="+")
+    parser.add_argument('-dataset', "--dataset", type=str, default=["cifar10"], nargs="+")
     parser.add_argument("-cutout", "--cutout", type=int, default=0)
     parser.add_argument("-auto-augment", "--auto-augment", action="store_true")
 
