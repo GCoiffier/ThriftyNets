@@ -148,7 +148,6 @@ class ThriftyBlock(nn.Module):
                 for i in range(len(hist)):
                     if hist[i] is not None:
                         hist[i] = F.max_pool2d(hist[i], 2)
-        print(hist[-1].size())
         return hist[-1]
 
 

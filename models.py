@@ -63,7 +63,7 @@ class ThriftyNet(nn.Module):
         if x.size()[-1]>1:
             out = F.adaptive_max_pool2d(x, (1,1))[:,:,0,0]
         else:
-            out = x
+            out = x[:,:,0,0]
         return self.LOutput(out)
 
 
@@ -93,7 +93,7 @@ class ResThriftyNet(nn.Module):
         if x.size()[-1]>1:
             out = F.adaptive_max_pool2d(x, (1,1))[:,:,0,0]
         else:
-            out = x
+            out = x[:,:,0,0]
         return self.LOutput(out)
 
 
@@ -132,7 +132,7 @@ class ThriftyNet_3State(nn.Module):
         if x3.size()[-1]>1:
             out = F.adaptive_max_pool2d(x3, (1,1))[:,:,0,0]
         else:
-            out = x3
+            out = x3[:,:,0,0]
         return self.LOutput(out)
 
 class EmbeddedThriftyNet(nn.Module):
