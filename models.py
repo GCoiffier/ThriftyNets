@@ -110,11 +110,11 @@ class ThriftyNet_3State(nn.Module):
         self.bias = bias
         self.n_history = n_history
 
-        self.n_filters = [100, 200, 300]
-        self.n_iters = [20, 25, 25]
+        self.n_filters = [200, 500, 1000]
+        self.n_iters = [25, 25, 25]
         self.pool_strategy = None
 
-        self.block1 = ThriftyBlock(self.n_filters[0], self.n_iters[0], self.n_history, [19], conv_mode=conv_mode, activ=activ, bias=bias)
+        self.block1 = ThriftyBlock(self.n_filters[0], self.n_iters[0], self.n_history, [24], conv_mode=conv_mode, activ=activ, bias=bias)
         self.block2 = ThriftyBlock(self.n_filters[1], self.n_iters[1], self.n_history, [12, 24], conv_mode=conv_mode, activ=activ, bias=bias)
         self.block3 = ThriftyBlock(self.n_filters[2], self.n_iters[2], self.n_history, [12, 24], conv_mode=conv_mode, activ=activ, bias=bias)
 

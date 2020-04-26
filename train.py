@@ -135,7 +135,7 @@ if __name__ == '__main__':
 
         logger.update({"test_loss" : test_loss})
         for i,k in enumerate(topk):
-            logger.update({"train_acc(top{})".format(k) : test_acc[i]})
+            logger.update({"test_acc(top{})".format(k) : test_acc[i]})
         
         if scheduler is not None:
             scheduler.step(logger["test_loss"])
