@@ -20,12 +20,12 @@ def get_model(args, metadata):
     model_name = args.model.lower()    
     if model_name=="thrifty":
         return ThriftyNet(metadata["input_shape"], metadata["n_classes"], args.filters, 
-                        args.iter, args.pool, args.activ, args.conv_mode, args.bias)
+                        args.iter, args.pool, args.activ, args.conv_mode, args.out_mode, args.bias)
 
     elif model_name in ["res_thrifty", "resthrifty"]:
         return ResThriftyNet(metadata["input_shape"], metadata["n_classes"], n_filters=args.filters, 
                             n_iter=args.iter, n_history=args.history, pool_strategy=args.pool, 
-                            activ=args.activ, conv_mode=args.conv_mode, bias=args.bias)
+                            activ=args.activ, conv_mode=args.conv_mode, out_mode=args.out_mode, bias=args.bias)
     
     elif model_name in ["block_thrifty", "blockthrifty"]:
         return ThriftyNet_3State(metadata["input_shape"], metadata["n_classes"], 
@@ -41,12 +41,19 @@ class ThriftyNet(nn.Module):
     """
     Just a ResThriftyNet with history = 1
     """
-    def __init__(self, input_shape, n_classes, n_filters, n_iter, pool_strategy, activ="relu", conv_mode="classic", bias=False):
+    def __init__(self, input_shape, n_classes, n_filters, n_iter, pool_strategy, activ="relu", conv_mode="classic", out_mode="pool", bias=False):
         super(ThriftyNet, self).__init__()
         self.input_shape = input_shape
         self.n_classes = n_classes
+        self.out_mode = out_mode
         self.Lblock = ThriftyBlock(n_filters, n_iter, 1, pool_strategy, conv_mode=conv_mode, activ=activ, bias=bias)
-        self.LOutput = nn.Linear(n_filters, n_classes)
+        
+        if out_mode == "pool":
+            out_size = n_filters
+        elif out_mode == "flatten":
+            out_size = np.prod(self.Lblock.out_shape(input_shape)) 
+        self.LOutput = nn.Linear(out_size, n_classes)
+
         self.n_parameters = sum(p.numel() for p in self.parameters())
 
         @property
@@ -60,8 +67,10 @@ class ThriftyNet(nn.Module):
     def forward(self, x):
         x = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
         x = self.Lblock(x)
-        if x.size()[-1]>1:
+        if self.out_mode=="pool" and x.size()[-1]>1:
             out = F.adaptive_max_pool2d(x, (1,1))[:,:,0,0]
+        elif self.out_mode=="flatten":
+            out = x.view(x.size()[0], -1)
         else:
             out = x[:,:,0,0]
         return self.LOutput(out)
@@ -71,12 +80,19 @@ class ResThriftyNet(nn.Module):
     """
     Residual Thrifty Network
     """
-    def __init__(self, input_shape, n_classes, n_filters, n_iter, n_history, pool_strategy, activ="relu", conv_mode="classic", bias=False):
+    def __init__(self, input_shape, n_classes, n_filters, n_iter, n_history, pool_strategy, activ="relu", conv_mode="classic", out_mode="pool", bias=False):
         super(ResThriftyNet, self).__init__()
         self.input_shape = input_shape
         self.n_classes = n_classes
         self.Lblock = ThriftyBlock(n_filters, n_iter, n_history, pool_strategy, conv_mode=conv_mode, activ=activ, bias=bias)
-        self.LOutput = nn.Linear(n_filters, n_classes)
+        self.out_mode = out_mode
+
+        if out_mode == "pool":
+            out_size = n_filters
+        elif out_mode == "flatten":
+            out_size = np.prod(self.Lblock.out_shape(input_shape)) 
+        self.LOutput = nn.Linear(out_size, n_classes)
+
         self.n_parameters = sum(p.numel() for p in self.parameters())
 
     @property
@@ -90,8 +106,10 @@ class ResThriftyNet(nn.Module):
     def forward(self, x):
         x = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
         x = self.Lblock(x)
-        if x.size()[-1]>1:
+        if self.out_mode=="pool" and x.size()[-1]>1:
             out = F.adaptive_max_pool2d(x, (1,1))[:,:,0,0]
+        elif self.out_mode=="flatten":
+            out = x.view(x.size()[0], -1)
         else:
             out = x[:,:,0,0]
         return self.LOutput(out)
@@ -115,10 +133,10 @@ class ThriftyNet_3State(nn.Module):
         self.pool_strategy = None
 
         self.block1 = ThriftyBlock(self.n_filters[0], self.n_iters[0], self.n_history, [24], conv_mode=conv_mode, activ=activ, bias=bias)
-        self.block2 = ThriftyBlock(self.n_filters[1], self.n_iters[1], self.n_history, [12, 24], conv_mode=conv_mode, activ=activ, bias=bias)
-        self.block3 = ThriftyBlock(self.n_filters[2], self.n_iters[2], self.n_history, [12, 24], conv_mode=conv_mode, activ=activ, bias=bias)
+        self.block2 = ThriftyBlock(self.n_filters[1], self.n_iters[1], self.n_history, [24], conv_mode=conv_mode, activ=activ, bias=bias)
+        self.block3 = ThriftyBlock(self.n_filters[2], self.n_iters[2], self.n_history, [12,24], conv_mode=conv_mode, activ=activ, bias=bias)
 
-        self.LOutput = nn.Linear(self.n_filters[-1], self.n_classes)
+        self.LOutput = nn.Linear(4*self.n_filters[-1], self.n_classes)
 
         self.n_parameters = sum(p.numel() for p in self.parameters())
 
@@ -129,10 +147,9 @@ class ThriftyNet_3State(nn.Module):
         x2 = self.block2(x1)
         x2 = F.pad(x2, (0, 0, 0, 0, 0, self.n_filters[2] - self.n_filters[1]))
         x3 = self.block3(x2)
-        if x3.size()[-1]>1:
-            out = F.adaptive_max_pool2d(x3, (1,1))[:,:,0,0]
-        else:
-            out = x3[:,:,0,0]
+
+        #out = F.adaptive_max_pool2d(x3, (1,1))[:,:,0,0]
+        out = x3.view(x3.size()[0], -1)
         return self.LOutput(out)
 
 class EmbeddedThriftyNet(nn.Module):

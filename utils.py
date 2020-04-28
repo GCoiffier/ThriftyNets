@@ -15,6 +15,7 @@ def args():
     parser.add_argument('-bias', "--bias", action="store_true")
     parser.add_argument('-pool', "--pool", nargs="+", type=int, default=[7])
     parser.add_argument('-conv-mode', "--conv-mode", type=str, default="mb1")
+    parser.add_argument('-out-mode', '--out-mode', type=str, default="pool", choices=["pool", "flatten"])
     parser.add_argument('-n-params', "--n-params", type=int, default=None)
 
     # Dataset and data augmentation

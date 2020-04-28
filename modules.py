@@ -97,11 +97,14 @@ class ThriftyBlock(nn.Module):
         self.pool_strategy = [False]*self.n_iter
         assert isinstance(pool_strategy, list) or isinstance(pool_strategy, tuple)
         if len(pool_strategy)==1:
+            self.n_pool = 0
             freq = pool_strategy[0]
             for i in range(self.n_iter):
                 if (i%freq == freq-1):
                     self.pool_strategy[i] = True
+                    self.n_pool +=1
         else:
+            self.n_pool = len(pool_strategy)
             for x in pool_strategy:
                 self.pool_strategy[x] = True
 
@@ -125,6 +128,14 @@ class ThriftyBlock(nn.Module):
         self.alpha = nn.Parameter(self.alpha)
 
         self.n_parameters = sum(p.numel() for p in self.parameters())
+
+    def out_shape(self,input_shape):
+        """
+        Computes the output tensor's shape, given a specific input shape
+        """
+        n_filters, x, y = input_shape
+        ds = 2**(self.n_pool)
+        return (self.n_filters, x // ds, y // ds)
 
 
     def forward(self, x):
