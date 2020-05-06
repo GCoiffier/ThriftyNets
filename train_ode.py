@@ -1,9 +1,7 @@
-from __future__ import print_function
-import argparse
+# This code was forked from : https://github.com/EmilienDupont/augmented-neural-odes
+
 import torch
 import torch.optim as optim
-import torch.nn as nn
-import torch.nn.functional as F
 from torch.optim.lr_scheduler import *
 
 from tqdm import tqdm, trange
@@ -14,15 +12,25 @@ import random
 import time
 import os
 import sys
-
+from thrifty.ode_models import *
 from common.datasets import get_data_loaders
 from common import utils
 
-from thrifty.models import get_model
+
+def get_and_reset_nfes(ode_model):
+    """Returns and resets the number of function evaluations for model."""
+    if hasattr(self.model, 'odeblock'):  # If we are using ODENet
+        iteration_nfes = ode_model.odeblock.odefunc.nfe
+        # Set nfe count to 0 before backward pass, so we can
+        # also measure backwards nfes
+        ode_model.odeblock.odefunc.nfe = 0
+    else:  # If we are using ODEBlock
+        iteration_nfes = self.model.odefunc.nfe
+        ode_model.odefunc.nfe = 0
+    return iteration_nfes
 
 
-if __name__ == '__main__':
-
+if __name__=="__main__":
     parser = utils.args()
     args = parser.parse_args()
     print(args)
@@ -39,28 +47,8 @@ if __name__ == '__main__':
         else:
             topk=(1,)
 
-    model = get_model(args, metadata)
-    if args.n_params is not None and args.model not in ["block_thrifty", "blockthrifty"]:
-        n = model.n_parameters
-        if n<args.n_params:
-            while n<args.n_params:
-                args.filters += 1
-                model = get_model(args, metadata)
-                n = model.n_parameters
-        if n>args.n_params:
-            while n>args.n_params:
-                args.filters -= 1 
-                model = get_model(args,metadata)
-                n = model.n_parameters
+    model = ConvODENet(device, metadata["input_shape"], metadata["n_classes"], args.iter, activ=args.activ).to(device)
 
-    print("N parameters : ", model.n_parameters)
-    print("N filters : ", model.n_filters)
-    print("Pool strategy : ", model.pool_strategy)
-
-    if args.resume is not None:
-        model.load_state_dict(torch.load(args.resume)["state_dict"])
-
-    model = model.to(device)
     scheduler = None
     if args.optimizer=="sgd":
         optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
@@ -77,8 +65,6 @@ if __name__ == '__main__':
 
     with open("logs/{}.log".format(args.name), "a") as f:
         f.write(str(args))
-        f.write("\nParameters : " + str(model.n_parameters))
-        f.write("\nFilters : " + str(model.n_filters))
         f.write("\n*******\n")
 
     print("-"*80 + "\n")
@@ -88,30 +74,39 @@ if __name__ == '__main__':
     for epoch in range(1, args.epochs + 1):
         t0 = time.time()
         logger.update({"Epoch" :  epoch, "lr" : lr})
-
-        ## TRAINING
-        model.train()
-        accuracies = torch.zeros(len(topk))
+        
+        epoch_nfes = 0
+        epoch_backward_nfes = 0
         loss = 0
         avg_loss = 0
-        for batch_idx, (data, target) in tqdm(enumerate(train_loader), 
+        accuracies = torch.zeros(len(topk))
+
+        ## TRAINING
+        optimizer.zero_grad()
+        model.train()
+        for batch_idx, (x_batch, y_batch) in tqdm(enumerate(train_loader), 
                                               total=len(train_loader),
                                               position=1, 
                                               leave=False, 
                                               ncols=100,
                                               unit="batch"):
+            x_batch = x_batch.to(device)
+            y_batch = y_batch.to(device)
+            y_pred = model(x_batch)
 
-            data, target = data.to(device), target.to(device)
-            optimizer.zero_grad()
-            output = model(data)
-            loss = F.cross_entropy(output, target)
-            avg_loss += loss.item()
+            iteration_nfes = get_and_reset_nfes(model)
+            epoch_nfes += iteration_nfes
+
+            loss = F.cross_entropy(y_pred, y_batch)
             loss.backward()
+            avg_loss += loss.item()
             optimizer.step()
-            accuracies += utils.accuracy(output, target, topk=topk)
-            acc_score = accuracies / (1+batch_idx)
 
-            tqdm_log = prefix+"Epoch {}/{}, LR: {:.1E}, Train_Loss: {:.3f}, Test_loss: {:.3f}, ".format(epoch, args.epochs, lr, avg_loss/(1+batch_idx), test_loss)
+            iteration_backward_nfes = get_and_reset_nfes(model)
+            epoch_backward_nfes += iteration_backward_nfes
+
+            tqdm_log = prefix+"Epoch {}/{}, LR: {:.1E}, Train_Loss: {:.3f}, Test_loss: {:.3f}, NFE: {}, bkwdNFE : {}".format(
+                    epoch, args.epochs, lr,  avg_loss/(1+batch_idx), test_loss, iteration_nfes, iteration_backward_nfes)
             for i,k in enumerate(topk):
                 tqdm_log += "Train_acc(top{}): {:.3f}, Test_acc(top{}): {:.3f}, ".format(k, acc_score[i], k, test_acc[i])
             tqdm.write(tqdm_log)

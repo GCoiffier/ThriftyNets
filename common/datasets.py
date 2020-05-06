@@ -4,7 +4,7 @@ import os
 import csv
 import numpy as np
 from PIL import Image
-from autoaugment import *
+from .autoaugment import *
 
 # Datasets are downloaded in your home folder. Change DATA_PATH to change download destination
 DATA_PATH = "~/.torch_datasets"

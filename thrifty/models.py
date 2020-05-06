@@ -4,11 +4,10 @@ import torch.nn.functional as F
 from torchvision.models import resnet
 
 import numpy as np
-from modules import *
-from functools import partial
+from .modules import *
+from .activations import get_activ
 
 """
-
 Parameters
 ----------
 args : parsed command line argument dict

@@ -1,4 +1,0 @@
-Namespace(activ='tanh', auto_augment=False, batch_size=80, bias=False, checkpoint_freq=0, conv_mode='mb1', cutout=0, dataset=['cifar10'], epochs=200, filters=208, gamma=0.5, history=5, iter=30, learning_rate=0.1, min_lr=0.0001, model='resthrifty', momentum=0.9, n_mini_batch=1, n_params=60000, name='pool2_60K', nesterov=True, optimizer='sgd', patience=7, pool=[10], resume=None, seed=780306, test_batch_size=100, topk=None, weight_decay=0.0005)
-Parameters : 59886
-Filters : 208
-*******
