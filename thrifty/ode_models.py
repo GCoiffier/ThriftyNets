@@ -102,13 +102,14 @@ class ConvODEFunc(nn.Module):
     activ : string
         activation function
     """
-    def __init__(self, device, n_filters, activ):
+    def __init__(self, device, n_filters, activ="relu"):
         super(ConvODEFunc, self).__init__()
         self.device = device
         self.nfe = 0  # Number of function evaluations
         self.n_filters = n_filters
-        self.conv = MBConv(n_filters, n_filters)
-        self.bn = nn.BatchNorm2d(n_filters)
+        #self.conv = MBConv(n_filters, n_filters)
+        self.conv = nn.Conv2d(n_filters, n_filters, kernel_size=3, padding=1, bias=False)
+        #self.bn = nn.BatchNorm2d(n_filters)
         self.activ = get_activ(activ)
 
     def forward(self, t, x):
@@ -124,7 +125,7 @@ class ConvODEFunc(nn.Module):
         self.nfe += 1
         out = self.conv(x)
         out = self.activ(out)
-        out = self.bn(out)
+        #out = self.bn(out)
         return out
 
 
