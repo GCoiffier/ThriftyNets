@@ -107,7 +107,7 @@ if __name__=="__main__":
             iteration_backward_nfes = get_and_reset_nfes(model)
             epoch_backward_nfes += iteration_backward_nfes
 
-            tqdm_log = prefix+"Epoch {}/{}, LR: {:.1E}, Train_Loss: {:.3f}, Test_loss: {:.3f}, NFE: {}, bkwdNFE : {}".format(
+            tqdm_log = prefix+"Epoch {}/{}, LR: {:.1E}, Train_Loss: {:.3f}, Test_loss: {:.3f}, NFE: {}, bkwdNFE : {}, ".format(
                     epoch, args.epochs, lr,  avg_loss/(1+batch_idx), test_loss, iteration_nfes, iteration_backward_nfes)
             for i,k in enumerate(topk):
                 tqdm_log += "Train_acc(top{}): {:.3f}, Test_acc(top{}): {:.3f}, ".format(k, acc_score[i], k, test_acc[i])
