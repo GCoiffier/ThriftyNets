@@ -101,7 +101,7 @@ if __name__=="__main__":
             loss.backward()
             avg_loss += loss.item()
             optimizer.step()
-            accuracies += utils.accuracy(output, target, topk=topk)
+            accuracies += utils.accuracy(y_pred, y_batch, topk=topk)
             acc_score = accuracies / (1+batch_idx)
 
             iteration_backward_nfes = get_and_reset_nfes(model)
