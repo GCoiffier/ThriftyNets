@@ -32,6 +32,7 @@ def get_and_reset_nfes(ode_model):
 
 if __name__=="__main__":
     parser = utils.args()
+    parser.add_argument("-adjoint", "--adjoint", action="store_true")
     args = parser.parse_args()
     print(args)
     
@@ -47,7 +48,7 @@ if __name__=="__main__":
         else:
             topk=(1,)
 
-    model = ConvODENet(device, metadata["input_shape"], metadata["n_classes"], args.iter, activ=args.activ).to(device)
+    model = ConvODENet(device, metadata["input_shape"], metadata["n_classes"], args.filters, activ=args.activ, adjoint=args.adjoint).to(device)
 
     scheduler = None
     if args.optimizer=="sgd":
