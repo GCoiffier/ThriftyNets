@@ -67,7 +67,7 @@ if __name__ == '__main__':
         scheduler = ReduceLROnPlateau(optimizer, factor=args.gamma, patience=args.patience, min_lr=args.min_lr)
         # scheduler = StepLR(optimizer, 100, gamma=0.1)
     elif args.optimizer=="adam":
-        optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+        optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
 
     try:
         os.mkdir("logs")
