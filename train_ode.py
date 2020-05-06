@@ -19,7 +19,7 @@ from common import utils
 
 def get_and_reset_nfes(ode_model):
     """Returns and resets the number of function evaluations for model."""
-    if hasattr(self.model, 'odeblock'):  # If we are using ODENet
+    if hasattr(ode_model, 'odeblock'):  # If we are using ODENet
         iteration_nfes = ode_model.odeblock.odefunc.nfe
         # Set nfe count to 0 before backward pass, so we can
         # also measure backwards nfes
