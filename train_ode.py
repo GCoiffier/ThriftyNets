@@ -39,7 +39,7 @@ if __name__=="__main__":
     parser.add_argument("-adjoint", "--adjoint", action="store_true")
     args = parser.parse_args()
     print(args)
-    print("N parameters : ", model.n_parameters)
+    
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     torch.manual_seed(args.seed)
@@ -54,7 +54,8 @@ if __name__=="__main__":
             topk=(1,)
 
     model = ConvODENet(device, metadata["input_shape"], metadata["n_classes"], args.filters, activ=args.activ, adjoint=args.adjoint).to(device)
-
+    print("N parameters : ", model.n_parameters)
+    
     scheduler = None
     if args.optimizer=="sgd":
         optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
