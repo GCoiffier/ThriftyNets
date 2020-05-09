@@ -15,18 +15,22 @@ import sys
 from thrifty.ode_models import *
 from common.datasets import get_data_loaders
 from common import utils
-
+from collections import OrderedDict
 
 def get_and_reset_nfes(ode_model):
     """Returns and resets the number of function evaluations for model."""
-    if hasattr(ode_model, 'odeblock1'):  # If we are using ODENet
-        iteration_nfes = ode_model.odeblock1.odefunc.nfe
-        # Set nfe count to 0 before backward pass, so we can
-        # also measure backwards nfes
-        ode_model.odeblock1.odefunc.nfe = 0
-    else:  # If we are using ODEBlock
-        iteration_nfes = ode_model.odefunc.nfe
-        ode_model.odefunc.nfe = 0
+    iteration_nfes = 0
+    for var in vars(ode_model).items():
+        if type(var[1])==OrderedDict and var[1]:
+            for blockname, block in list(var[1].items()):
+                if type(block)==ODEBlock:
+                    iteration_nfes += block.odefunc.nfe
+                    # Set nfe count to 0 before backward pass, so we can
+                    # also measure backwards nfes
+                    block.odefunc.nfe = 0
+                elif type(block)==ConvODEFunc:  # If we are using ODEBlock
+                    iteration_nfes = block.odefunc.nfe
+                    block.odefunc.nfe = 0
     return iteration_nfes
 
 
