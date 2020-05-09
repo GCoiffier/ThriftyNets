@@ -173,6 +173,8 @@ class ConvODENet(nn.Module):
         odefunc = ConvODEFunc(device, n_filters, activ)
         self.odeblock4 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
         self.Loutput = nn.Linear(self.n_filters, self.n_classes)
+        
+        self.n_parameters = sum(p.numel() for p in self.parameters())
 
     def forward(self, x, return_features=False):
         features = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
