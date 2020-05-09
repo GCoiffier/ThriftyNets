@@ -175,9 +175,9 @@ class ConvODENet(nn.Module):
         x = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
         features = self.odeblock1(x)
         features = F.max_pool2d(features,2)
-        features = self.odeblock2(x)
+        features = self.odeblock2(features)
         features = F.max_pool2d(features,2)
-        features = self.odeblock3(x)
+        features = self.odeblock3(features)
         features = F.adaptive_max_pool2d(features, (1,1))[:,:,0,0]
         pred = self.Loutput(features)
         if return_features:
