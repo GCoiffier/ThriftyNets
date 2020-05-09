@@ -169,7 +169,7 @@ class ConvODENet(nn.Module):
         self.tol = tol
 
         odefunc = ConvODEFunc(device, n_filters, activ)
-        self.odeblock = ODEBlock(device, odefunc, is_conv=True, tol=tol, adjoint=adjoint)
+        self.odeblock = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
         self.Loutput = nn.Linear(self.n_filters, self.n_classes)
 
     def forward(self, x, return_features=False):
