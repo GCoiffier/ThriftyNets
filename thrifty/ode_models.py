@@ -168,16 +168,15 @@ class ConvODENet(nn.Module):
         self.odeblock1 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
         self.odeblock2 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
         self.odeblock3 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
+        self.odeblock4 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
 
         self.Loutput = nn.Linear(self.n_filters, self.n_classes)
 
     def forward(self, x, return_features=False):
-        x = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
-        features = self.odeblock1(x)
-        features = F.max_pool2d(features,2)
-        features = self.odeblock2(features)
-        features = F.max_pool2d(features,2)
-        features = self.odeblock3(features)
+        features = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
+        for conv in [self.odeblock1, self.odeblock2, self.odeblock3, self.odeblock4]:
+            features = conv(features)
+            features = F.max_pool2d(features,2)
         features = F.adaptive_max_pool2d(features, (1,1))[:,:,0,0]
         pred = self.Loutput(features)
         if return_features:
