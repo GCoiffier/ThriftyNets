@@ -25,7 +25,7 @@ def get_and_reset_nfes(ode_model):
         # also measure backwards nfes
         ode_model.odeblock.odefunc.nfe = 0
     else:  # If we are using ODEBlock
-        iteration_nfes = self.model.odefunc.nfe
+        iteration_nfes = ode_model.odefunc.nfe
         ode_model.odefunc.nfe = 0
     return iteration_nfes
 
