@@ -163,19 +163,19 @@ class ConvODENet(nn.Module):
         self.n_filters = n_filters
         self.n_classes = n_classes
         self.tol = tol
+        self.eval_time = torch.Tensor((3,))
 
         odefunc = ConvODEFunc(device, n_filters, activ)
         self.odeblock1 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
         self.odeblock2 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
         self.odeblock3 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
         self.odeblock4 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
-
         self.Loutput = nn.Linear(self.n_filters, self.n_classes)
 
     def forward(self, x, return_features=False):
         features = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
         for conv in [self.odeblock1, self.odeblock2, self.odeblock3, self.odeblock4]:
-            features = conv(features)
+            features = conv(features, eval_times=self.eval_time)[0]
             features = F.max_pool2d(features,2)
         features = F.adaptive_max_pool2d(features, (1,1))[:,:,0,0]
         pred = self.Loutput(features)
