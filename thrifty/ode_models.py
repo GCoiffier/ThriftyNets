@@ -27,11 +27,10 @@ class ODEBlock(nn.Module):
         If True calculates gradient with adjoint method, otherwise
         backpropagates directly through operations of ODE solver.
     """
-    def __init__(self, device, odefunc, is_conv=False, tol=1e-3, adjoint=False):
+    def __init__(self, device, odefunc, tol=1e-3, adjoint=False):
         super(ODEBlock, self).__init__()
         self.adjoint = adjoint
         self.device = device
-        self.is_conv = is_conv
         self.odefunc = odefunc
         self.tol = tol
 
@@ -106,6 +105,7 @@ class ConvODEFunc(nn.Module):
         super(ConvODEFunc, self).__init__()
         self.device = device
         self.nfe = 0  # Number of function evaluations
+        self.n_ds = 0
         self.n_filters = n_filters
         #self.conv = MBConv(n_filters, n_filters)
         self.conv = nn.Conv2d(n_filters, n_filters, kernel_size=3, padding=1, bias=False)
@@ -126,6 +126,9 @@ class ConvODEFunc(nn.Module):
         out = self.conv(x)
         out = self.activ(out)
         #out = self.bn(out)
+        if 4*t.item() > self.n_ds:
+            out = F.max_pool2d(out, 2)
+            self.n_ds += 1
         return out
 
 
