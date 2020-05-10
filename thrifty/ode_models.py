@@ -106,13 +106,9 @@ class ConvODEFunc(nn.Module):
         self.device = device
         self.nfe = 0  # Number of function evaluations
         self.n_filters = n_filters
-        #self.conv = MBConv(n_filters, n_filters)
-        #self.conv = nn.Conv2d(n_filters, n_filters, kernel_size=3, padding=1, bias=False)
-
-        self.C2 = nn.Conv2d(n_filters, n_filters, kernel_size=3, padding=1, bias=False)
-        self.C1 = nn.Conv2d(n_filters, n_filters, kernel_size=3, padding=1)
-
-        #self.bn = nn.InstanceNorm2d(n_filters)
+        self.conv = MBConv(n_filters, n_filters)
+        self.conv = nn.Conv2d(n_filters, n_filters, kernel_size=3, padding=1, bias=False)
+        self.bn = nn.BatchNorm2d(n_filters)
         self.activ = get_activ(activ)
 
     def forward(self, t, x):
@@ -126,13 +122,10 @@ class ConvODEFunc(nn.Module):
             Shape (batch_size, input_dim)
         """
         self.nfe += 1
-        #out = self.conv(x)
-        #out = self.activ(out)
-        #out = self.bn(out)
-        
-        x1 = self.C1(x)
-        x2 = self.C2(x)
-        return self.activ(x1) + self.activ(x2)
+        out = self.conv(x)
+        out = self.activ(out)
+        out = self.bn(out)
+        return out
 
 
 class ConvODENet(nn.Module):
