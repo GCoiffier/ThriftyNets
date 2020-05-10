@@ -10,10 +10,10 @@ class ReTanh(nn.Module):
     inplace : bool
         Whether to use inplace version of the module.
     """
-    def __init__(self, inplace=False):
+    def __init__(self):
         super(ReTanh, self).__init__()
         self.inplace = inplace
-        self.tanh = nn.Tanh(inplace = self.inplace)
+        self.tanh = nn.Tanh()
 
     def forward(self, x):
         return x * self.tanh(x)
