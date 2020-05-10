@@ -108,7 +108,7 @@ class ConvODEFunc(nn.Module):
         self.n_filters = n_filters
         self.conv = MBConv(n_filters, n_filters)
         self.conv = nn.Conv2d(n_filters, n_filters, kernel_size=3, padding=1, bias=False)
-        self.bn = nn.BatchNorm2d(n_filters)
+        #self.bn = nn.BatchNorm2d(n_filters)
         self.activ = get_activ(activ)
 
     def forward(self, t, x):
@@ -124,7 +124,7 @@ class ConvODEFunc(nn.Module):
         self.nfe += 1
         out = self.conv(x)
         out = self.activ(out)
-        out = self.bn(out)
+        #out = self.bn(out)
         return out
 
 
