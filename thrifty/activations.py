@@ -12,7 +12,6 @@ class ReTanh(nn.Module):
     """
     def __init__(self):
         super(ReTanh, self).__init__()
-        self.inplace = inplace
         self.tanh = nn.Tanh()
 
     def forward(self, x):
