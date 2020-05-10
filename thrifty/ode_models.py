@@ -107,8 +107,12 @@ class ConvODEFunc(nn.Module):
         self.nfe = 0  # Number of function evaluations
         self.n_filters = n_filters
         #self.conv = MBConv(n_filters, n_filters)
-        self.conv = nn.Conv2d(n_filters, n_filters, kernel_size=3, padding=1, bias=False)
-        self.bn = nn.InstanceNorm2d(n_filters)
+        #self.conv = nn.Conv2d(n_filters, n_filters, kernel_size=3, padding=1, bias=False)
+
+        self.C2 = nn.Conv2d(n_filters, n_filters, kernel_size=3, padding=1, bias=False)
+        self.C1 = nn.Conv2d(n_filters, n_filters, kernel_size=3, padding=1)
+
+        #self.bn = nn.InstanceNorm2d(n_filters)
         self.activ = get_activ(activ)
 
     def forward(self, t, x):
@@ -122,10 +126,13 @@ class ConvODEFunc(nn.Module):
             Shape (batch_size, input_dim)
         """
         self.nfe += 1
-        out = self.conv(x)
-        out = self.activ(out)
+        #out = self.conv(x)
+        #out = self.activ(out)
         #out = self.bn(out)
-        return out
+        
+        x2 = torch.mul(x.transpose(2,3), self.C2(x))
+        x1 = self.C1(x)
+        return x2 + x1
 
 
 class ConvODENet(nn.Module):
@@ -165,22 +172,14 @@ class ConvODENet(nn.Module):
         self.tol = tol
 
         odefunc = ConvODEFunc(device, n_filters, activ)
-        self.odeblock1 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
-        odefunc = ConvODEFunc(device, n_filters, activ)
-        self.odeblock2 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
-        odefunc = ConvODEFunc(device, n_filters, activ)
-        self.odeblock3 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
-        odefunc = ConvODEFunc(device, n_filters, activ)
-        self.odeblock4 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
+        self.odeblock = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
         self.Loutput = nn.Linear(self.n_filters, self.n_classes)
         
         self.n_parameters = sum(p.numel() for p in self.parameters())
 
     def forward(self, x, return_features=False):
         features = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
-        for conv in [self.odeblock1, self.odeblock2, self.odeblock3, self.odeblock4]:
-            features = conv(features)
-            features = F.max_pool2d(features,2)
+        features = self.odeblock(features)
         features = F.adaptive_max_pool2d(features, (1,1))[:,:,0,0]
         pred = self.Loutput(features)
         if return_features:
