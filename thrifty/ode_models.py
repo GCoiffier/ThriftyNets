@@ -130,7 +130,7 @@ class ConvODEFunc(nn.Module):
         #out = self.activ(out)
         #out = self.bn(out)
         
-        x2 = torch.mul(x.transpose(2,3), self.C2(x))
+        x2 = torch.mul(x, self.C2(x))
         x1 = self.C1(x)
         return x2 + x1
 
