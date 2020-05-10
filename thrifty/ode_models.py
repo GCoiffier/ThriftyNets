@@ -132,7 +132,7 @@ class ConvODEFunc(nn.Module):
         
         x1 = self.C1(x)
         x2 = self.C2(x)
-        return x1*x2
+        return self.activ(x1) + self.activ(x2)
 
 
 class ConvODENet(nn.Module):
