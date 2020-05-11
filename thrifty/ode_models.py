@@ -107,9 +107,9 @@ class ConvODEFunc(nn.Module):
         self.nfe = 0  # Number of function evaluations
         self.n_filters = n_filters
         #self.conv = MBConv(n_filters, n_filters)
-        self.conv1 = nn.Conv2d(n_filters, n_filters+60, kernel_size=1, padding=0, bias=False)
-        self.conv2 = nn.Conv2d(n_filters+60, n_filters+60, kernel_size=3, padding=1)
-        self.conv3 = nn.Conv2d(n_filters+60, n_filters, kernel_size=1, padding=0, bias=False)
+        self.conv1 = nn.Conv2d(n_filters, 64, kernel_size=1, padding=0, bias=False)
+        self.conv2 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
+        self.conv3 = nn.Conv2d(64, n_filters, kernel_size=1, padding=0, bias=False)
         #self.bn = nn.BatchNorm2d(n_filters)
         self.activ = get_activ(activ)
 
@@ -124,7 +124,7 @@ class ConvODEFunc(nn.Module):
             Shape (batch_size, input_dim)
         """
         self.nfe += 1
-        out = self.conv(x)
+        out = self.conv1(x)
         out = self.activ(out)
         out = self.conv2(out)
         out = self.activ(out)
@@ -171,15 +171,30 @@ class ConvODENet(nn.Module):
         self.tol = tol
 
         odefunc = ConvODEFunc(device, n_filters, activ)
-        self.odeblock = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
+        self.odeblock1 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
+
+        odefunc = ConvODEFunc(device, n_filters, activ)
+        self.odeblock2 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
+
+        odefunc = ConvODEFunc(device, n_filters, activ)
+        self.odeblock3 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
+
         self.Loutput = nn.Linear(self.n_filters, self.n_classes)
         
         self.n_parameters = sum(p.numel() for p in self.parameters())
 
     def forward(self, x, return_features=False):
         features = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
-        features = self.odeblock(features)
+
+        features = self.odeblock1(features)
+        features = F.max_pool2d(features, 2)
+
+        features = self.odeblock2(features)
+        features = F.max_pool2d(features, 2)
+
+        features = self.odeblock3(features)
         features = F.adaptive_max_pool2d(features, (1,1))[:,:,0,0]
+        
         pred = self.Loutput(features)
         if return_features:
             return features, pred
