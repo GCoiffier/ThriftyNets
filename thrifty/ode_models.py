@@ -121,7 +121,7 @@ class ConvODEFunc(nn.Module):
             Shape (batch_size, input_dim)
         """
         self.nfe += 1
-        out = self.conv1(x)
+        out = self.conv(x)
         out = self.activ(out)
         out = self.bn(out)
         return out
