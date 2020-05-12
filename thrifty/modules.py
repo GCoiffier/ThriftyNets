@@ -13,6 +13,10 @@ class MBConv(nn.Module):
     def forward(self, x):
         return self.conv2(self.conv1(x))
 
+def Conv3x3(in_planes, out_planes, stride=1, bias=False):
+    """3x3 convolution with padding"""
+    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=bias)
+
 
 class ThriftyBlock(nn.Module):
     def __init__(self, n_filters, n_iter, n_history, pool_strategy, conv_mode="classic", activ="relu", bias=False):

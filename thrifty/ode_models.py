@@ -101,13 +101,15 @@ class ConvODEFunc(nn.Module):
     activ : string
         activation function
     """
-    def __init__(self, device, n_filters, activ="relu"):
+    def __init__(self, device, n_filters, activ="relu", bn=False):
         super(ConvODEFunc, self).__init__()
         self.device = device
         self.nfe = 0  # Number of function evaluations
         self.n_filters = n_filters
         self.conv = MBConv(n_filters, n_filters)
-        self.bn = nn.BatchNorm2d(n_filters)
+        self.bn = bn
+        if self.bn:
+            self.Lbn = nn.BatchNorm2d(n_filters)
         self.activ = get_activ(activ)
 
     def forward(self, t, x):
@@ -123,7 +125,8 @@ class ConvODEFunc(nn.Module):
         self.nfe += 1
         out = self.conv(x)
         out = self.activ(out)
-        out = self.bn(out)
+        if self.bn:
+            out = self.Lbn(out)
         return out
 
 
@@ -164,25 +167,16 @@ class ConvODENet(nn.Module):
         self.tol = tol
 
         odefunc = ConvODEFunc(device, n_filters, activ)
-        self.odeblock1 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
-        self.odeblock2 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
-        self.odeblock3 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
-
-        self.Loutput = nn.Linear(self.n_filters, self.n_classes)
+        self.odeblock = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
+        self.Loutput = nn.Linear(4 * self.n_filters, self.n_classes)
         
         self.n_parameters = sum(p.numel() for p in self.parameters())
 
     def forward(self, x, return_features=False):
         features = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
 
-        features = self.odeblock1(features)
-        features = F.max_pool2d(features, 2)
-
-        features = self.odeblock2(features)
-        features = F.max_pool2d(features, 2)
-
-        features = self.odeblock3(features)
-        features = F.adaptive_max_pool2d(features, (1,1))[:,:,0,0]
+        features = self.odeblock(features)
+        features = F.adaptive_max_pool2d(features, (2,2)).view(-1, 4*self.n_filters)
 
         pred = self.Loutput(features)
         if return_features:

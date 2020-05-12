@@ -6,7 +6,7 @@ from torchvision.models import resnet
 import numpy as np
 from .modules import *
 from .activations import get_activ
-
+from .resnet_models import resnet18
 """
 Parameters
 ----------
@@ -32,6 +32,9 @@ def get_model(args, metadata):
                                  activ=args.activ, bias=args.bias)
     elif model_name in ["embedded_thrifty", "embeddedthrifty"]:
         return EmbeddedThriftyNet(args.filters, args.iter)
+
+    elif model_name == "resnet18":
+        return resnet18(metadata["input_shape"], metadata["n_classes"], args.filters)
 
     else:
         raise Exception("Model type was not recognized")
