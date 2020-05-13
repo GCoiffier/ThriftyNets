@@ -104,7 +104,7 @@ if __name__=="__main__":
             iteration_nfes = get_and_reset_nfes(model)
             epoch_nfes += iteration_nfes
 
-            loss = F.cross_entropy(y_pred, y_batch)
+            loss = -F.cross_entropy(y_pred, y_batch)
             loss.backward()
             avg_loss += loss.item()
             optimizer.step()
