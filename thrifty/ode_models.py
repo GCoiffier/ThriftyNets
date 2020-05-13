@@ -167,7 +167,7 @@ class ConvODENet(nn.Module):
         self.tol = tol
 
         #self.embed = nn.Conv2d(self.input_shape[0], self.n_filters, kernel_size=3, padding=1, bias=False)
-        self.embed = MBConv(self.input_shape[0], self.n_filters)
+        self.embed = nn.Conv2d(self.input_shape[0], self.n_filters, kernel_size=1, bias=False)
 
         odefunc = ConvODEFunc(device, n_filters, activ)
         self.odeblock = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
