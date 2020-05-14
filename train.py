@@ -22,7 +22,6 @@ from thrifty.models import get_model
 
 def plot_alphas(block,output_name):
     from thrifty.modules import ThriftyBlock
-    from pylab import imsave
     assert isinstance(block, ThriftyBlock)
     al = block.alpha.detach().cpu().numpy()
     with open(output_name, "w") as f:
@@ -117,7 +116,7 @@ if __name__ == '__main__':
             loss = F.cross_entropy(output, target)
             avg_loss += loss.item()
 
-            sfp_loss = F.softplus(model.Lblock.alpha).sum()
+            sfp_loss = -F.softplus(model.Lblock.alpha).sum()
             loss += sfp_loss
 
             loss.backward()
