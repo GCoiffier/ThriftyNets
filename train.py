@@ -25,7 +25,9 @@ def plot_alphas(block,output_name):
     from pylab import imsave
     assert isinstance(block, ThriftyBlock)
     al = block.alpha.detach().cpu().numpy()
-    imsave(output_name, al)
+    with open(output_name, "w") as f:
+        f.write(str(al))
+
 
 if __name__ == '__main__':
 
@@ -110,8 +112,14 @@ if __name__ == '__main__':
             data, target = data.to(device), target.to(device)
             optimizer.zero_grad()
             output = model(data)
+            
+            
             loss = F.cross_entropy(output, target)
             avg_loss += loss.item()
+
+            sfp_loss = F.softplus(model.Lblock.alpha).sum()
+            loss += sfp_loss
+
             loss.backward()
             optimizer.step()
             accuracies += utils.accuracy(output, target, topk=topk)
