@@ -166,11 +166,11 @@ class ConvODENet(nn.Module):
         self.n_classes = n_classes
         self.tol = tol
 
-        #self.embed = nn.Conv2d(self.input_shape[0], self.n_filters, kernel_size=3, padding=1, bias=False)
-        self.embed = nn.Conv2d(self.input_shape[0], self.n_filters, kernel_size=1, bias=False)
+        self.embed = nn.Conv2d(self.input_shape[0], self.n_filters, kernel_size=3, padding=1, bias=False)
 
-        odefunc = ConvODEFunc(device, n_filters, activ)
-        self.odeblock = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
+        odefunc = ConvODEFunc(device, n_filters, activ, bn=True)
+        self.odeblock1 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
+        self.odeblock2 = ODEBlock(device, odefunc, tol=tol, adjoint=adjoint)
         self.Loutput = nn.Linear(4 * self.n_filters, self.n_classes)
         
         self.n_parameters = sum(p.numel() for p in self.parameters())
@@ -178,7 +178,9 @@ class ConvODENet(nn.Module):
     def forward(self, x, return_features=False):
         #features = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
         features = self.embed(x)
-        features = self.odeblock(features)
+        features = self.odeblock1(features)
+        features = F.max_pool2d(features, 4)
+        featyres = self.odeblock2(features)
         features = F.adaptive_max_pool2d(features, (2,2)).view(-1, 4*self.n_filters)
 
         pred = self.Loutput(features)
