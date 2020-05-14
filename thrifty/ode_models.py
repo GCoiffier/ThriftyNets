@@ -158,7 +158,7 @@ class ConvODENet(nn.Module):
         If True calculates gradient with adjoint method, otherwise
         backpropagates directly through operations of ODE solver.
     """
-    def __init__(self, device, input_shape, n_classes, n_filters, activ="tanh", tol=1e-3, adjoint=False):
+    def __init__(self, device, input_shape, n_classes, n_filters, activ="tanh", tol=1e-1, adjoint=False):
         super(ConvODENet, self).__init__()
         self.device = device
         self.input_shape = input_shape
