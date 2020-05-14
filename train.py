@@ -20,6 +20,12 @@ from common import utils
 
 from thrifty.models import get_model
 
+def plot_alphas(block,output_name):
+    from thrifty.modules import ThriftyBlock
+    from pylab import imsave
+    assert isinstance(block, ThriftyBlock)
+    al = block.alpha.detach().cpu().numpy()
+    imsave(output_name, al)
 
 if __name__ == '__main__':
 
@@ -134,6 +140,8 @@ if __name__ == '__main__':
 
         test_loss /= len(test_loader.dataset)
         test_acc /= len(test_loader)
+
+        plot_alphas(model.Lblock, "alpha_e{}.png".format(epoch))
 
         logger.update({"test_loss" : test_loss})
         for i,k in enumerate(topk):

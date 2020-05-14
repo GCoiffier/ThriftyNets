@@ -2,6 +2,7 @@ import torch
 import os
 import random
 import argparse
+import numpy as np
 
 def args():
     parser = argparse.ArgumentParser(description='ThritfyNets')
