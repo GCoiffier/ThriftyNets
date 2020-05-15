@@ -121,8 +121,7 @@ if __name__ == '__main__':
 
             l1_loss = 0
             for i in range(model.Lblock.alpha.size()[0]):
-                line_i = model.Lblock.alpha[i,:]
-                print(i)
+                line_i = model.Lblock.alpha[i,1:]
                 l1_loss += F.l1_loss(line_i, torch.zeros_like(line_i))
 
             loss.backward()
