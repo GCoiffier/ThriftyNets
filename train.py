@@ -116,7 +116,7 @@ if __name__ == '__main__':
             loss = F.cross_entropy(output, target)
             avg_loss += loss.item()
 
-            alpha_loss = F.relu(2 - model.Lblock.alpha) - F.relu(model.Lblock.alpha)
+            alpha_loss = F.relu(model.Lblock.alpha - 2) + F.relu(-model.Lblock.alpha)
             loss += alpha_loss.sum()
 
             loss.backward()
