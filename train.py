@@ -119,6 +119,12 @@ if __name__ == '__main__':
             alpha_loss = F.relu(model.Lblock.alpha - 2) + F.relu(-model.Lblock.alpha)
             loss += alpha_loss.sum()
 
+            l1_loss = 0
+            for i in range(model.Lblock.alpha.size()):
+                line_i = model.Lblock.alpha[i,:]
+                print(i)
+                l1_loss += F.l1_loss(line_i, torch.zeros_like(line_i))
+
             loss.backward()
             optimizer.step()
             accuracies += utils.accuracy(output, target, topk=topk)
