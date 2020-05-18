@@ -52,7 +52,6 @@ def prune_zeros(model, tol=1e-2):
         for t in range(blck.n_iter):
             w,b = blck.Lnormalization[t].weight, blck.Lnormalization[t].bias
             blck.Lnormalization[t] = nn.BatchNorm2d(new_n_filters)
-            print(blck.Lnormalization[t].running_mean.size())
             blck.Lnormalization[t].weight = nn.Parameter(w[to_keep])
             blck.Lnormalization[t].bias = nn.Parameter(b[to_keep])
     else:
@@ -190,6 +189,7 @@ if __name__ == '__main__':
         print()
 
         prune_zeros(model)
+        model = model.to(device)
 
         if args.checkpoint_freq != 0 and epoch%args.checkpoint_freq == 0:
             name = args.name+ "_e" + str(epoch) + "_acc{:d}.model".format(int(10000*logger["test_acc(top1)"]))
