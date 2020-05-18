@@ -28,7 +28,7 @@ def prune_zeros(model, tol=1e-2):
         w = blck.Lconv.weight
         m, _, k, _ = w.size()
         to_keep = []
-    elif isinstance(blck.conv, MBConv):
+    elif isinstance(blck.Lconv, MBConv):
         w1 = blck.conv1.weight
         w2 = blck.conv2.weight
         m, _, k, _ = w1.size() # size (m, 1, k, k)
