@@ -21,7 +21,7 @@ from common import utils
 from thrifty.models import get_model
 from thrifty.modules import MBConv
 
-def prune_zeros(model, tol=1e-2):
+def prune_zeros(model, tol=1e-3):
     # Model is a ThriftyNet
     blck = model.Lblock
     conv = blck.Lconv
@@ -42,6 +42,7 @@ def prune_zeros(model, tol=1e-2):
         w1 = w1[to_keep, ...]
         w2 = w2[to_keep,...][:,to_keep,...]
 
+        old_n_filters = block.n_filters
         new_n_filters = len(to_keep)
         blck.n_filters = new_n_filters
         blck.Lconv = MBConv(new_n_filters, new_n_filters)
@@ -63,7 +64,7 @@ def prune_zeros(model, tol=1e-2):
         raise Exception("Pruning impossible")
 
     model.n_parameters = sum(p.numel() for p in model.parameters())
-    print("Pruned {}/{} filters, {} parameters\n".format(blck.n_filters - new_n_filters, blck.n_filters, model.n_parameters))
+    print("Pruned {}/{} filters, {} parameters\n".format(old_n_filters - new_n_filters, blck.n_filters, model.n_parameters))
 
 
 if __name__ == '__main__':
@@ -153,11 +154,12 @@ if __name__ == '__main__':
             loss = F.cross_entropy(output, target)
             avg_loss += loss.item()
 
-            n_filters = model.Lblock.n_filters
-            if isinstance(model.Lblock.Lconv, MBConv):
-                w = model.Lblock.Lconv.conv1.weight
-                for i in range(n_filters):
-                    loss += 1e-5/lr * w[i,...].norm()
+            if lr<1e-3:
+                n_filters = model.Lblock.n_filters
+                if isinstance(model.Lblock.Lconv, MBConv):
+                    w = model.Lblock.Lconv.conv1.weight
+                    for i in range(n_filters):
+                        loss += 1e-3/lr * w[i,...].norm()
 
             loss.backward()
             optimizer.step()
