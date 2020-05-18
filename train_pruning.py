@@ -42,11 +42,11 @@ def prune_zeros(model, tol=1e-2):
         w2 = w2[to_keep,...][:,to_keep,...]
 
         new_n_filters = len(to_keep)
-        print("Pruned {}/{} filters".format(block.n_filters - new_n_filters, block.n_filters))
-        block.n_filters = new_n_filters
-        block.Lconv = MBConv(new_n_filters, new_n_filters)
-        block.Lconv.conv1.weight = w1
-        block.Lconv.conv2.weight = w2
+        print("Pruned {}/{} filters".format(model.Lblock.n_filters - new_n_filters, model.Lblock.n_filters))
+        model.Lblock.n_filters = new_n_filters
+        model.Lblock.Lconv = MBConv(new_n_filters, new_n_filters)
+        model.Lblock.Lconv.conv1.weight = w1
+        model.Lblock.Lconv.conv2.weight = w2
 
     else:
         raise Exception("Pruning impossible")
