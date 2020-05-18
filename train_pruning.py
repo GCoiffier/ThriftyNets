@@ -38,8 +38,8 @@ def prune_zeros(model, tol=1e-2):
             norm_i = w1[i,...].norm()
             if norm_i > tol:
                 to_keep.append(i)
-        w1 = w1[l, ...]
-        w2 = w2[l,...][:,l,...]
+        w1 = w1[to_keep, ...]
+        w2 = w2[to_keep,...][:,to_keep,...]
 
         new_n_filters = len(to_keep)
         print("Pruned {}/{} filters".format(block.n_filters - new_n_filters, block.n_filters))
