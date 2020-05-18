@@ -108,13 +108,13 @@ if __name__ == '__main__':
     print("-"*80 + "\n")
     test_loss = 0
     test_acc = torch.zeros(len(topk))
-    lr = optimizer.state_dict()["param_groups"][0]["lr"]
+    lr = args.learning_rate
     for epoch in range(1, args.epochs + 1):
 
         if args.optimizer=="sgd":
-            optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
+            optimizer = optim.SGD(model.parameters(), lr=lr, momentum=args.momentum, weight_decay=args.weight_decay)
         elif args.optimizer=="adam":
-            optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
+            optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=args.weight_decay)
 
         t0 = time.time()
         logger.update({"Epoch" :  epoch, "lr" : lr})
