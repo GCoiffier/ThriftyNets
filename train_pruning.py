@@ -199,6 +199,7 @@ if __name__ == '__main__':
         print()
 
         prune_zeros(model)
+        logger.update({"params" : model.n_parameters})
         model = model.to(device)
 
         if args.checkpoint_freq != 0 and epoch%args.checkpoint_freq == 0:
