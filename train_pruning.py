@@ -24,8 +24,8 @@ from thrifty.modules import MBConv
 def prune_zeros(model, tol=1e-2):
     # Model is a ThriftyNet
     blck = model.Lblock
-    if isinstance(blck.conv, nn.Conv2d):
-        w = blck.conv.weight
+    if isinstance(blck.Lconv, nn.Conv2d):
+        w = blck.Lconv.weight
         m, _, k, _ = w.size()
         to_keep = []
     elif isinstance(blck.conv, MBConv):
@@ -44,9 +44,9 @@ def prune_zeros(model, tol=1e-2):
         new_n_filters = len(to_keep)
         print("Pruned {}/{} filters".format(block.n_filters - new_n_filters, block.n_filters))
         block.n_filters = new_n_filters
-        block.conv = MBConv(new_n_filters, new_n_filters)
-        block.conv.conv1.weight = w1
-        block.conv.conv2.weight = w2
+        block.Lconv = MBConv(new_n_filters, new_n_filters)
+        block.Lconv.conv1.weight = w1
+        block.Lconv.conv2.weight = w2
 
     else:
         raise Exception("Pruning impossible")
@@ -141,8 +141,8 @@ if __name__ == '__main__':
             avg_loss += loss.item()
 
             n_filters = model.Lblock.n_filters
-            if isinstance(model.Lblock.conv, MBConv):
-                w = model.Lblock.conv.conv1.weight
+            if isinstance(model.Lblock.Lconv, MBConv):
+                w = model.Lblock.Lconv.conv1.weight
                 for i in range(n_filters):
                     loss += w[i,...].norm()
 
