@@ -93,13 +93,6 @@ if __name__ == '__main__':
 
     model = model.to(device)
     scheduler = None
-    if args.optimizer=="sgd":
-        optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
-        scheduler = ReduceLROnPlateau(optimizer, factor=args.gamma, patience=args.patience, min_lr=args.min_lr)
-        # scheduler = StepLR(optimizer, 100, gamma=0.1)
-    elif args.optimizer=="adam":
-        optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
-
     try:
         os.mkdir("logs")
     except:
@@ -117,6 +110,12 @@ if __name__ == '__main__':
     test_acc = torch.zeros(len(topk))
     lr = optimizer.state_dict()["param_groups"][0]["lr"]
     for epoch in range(1, args.epochs + 1):
+
+         if args.optimizer=="sgd":
+            optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
+        elif args.optimizer=="adam":
+            optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
+
         t0 = time.time()
         logger.update({"Epoch" :  epoch, "lr" : lr})
 
@@ -179,9 +178,8 @@ if __name__ == '__main__':
         for i,k in enumerate(topk):
             logger.update({"test_acc(top{})".format(k) : test_acc[i]})
         
-        if scheduler is not None:
-            scheduler.step(logger["test_loss"])
-        lr = optimizer.state_dict()["param_groups"][0]["lr"]
+        if epoch%10==0:
+            lr = optimizer.state_dict()["param_groups"][0]["lr"]/10
         print()
 
         prune_zeros(model)
