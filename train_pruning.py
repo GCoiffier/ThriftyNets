@@ -159,7 +159,7 @@ if __name__ == '__main__':
                 if isinstance(model.Lblock.Lconv, MBConv):
                     w = model.Lblock.Lconv.conv1.weight
                     for i in range(n_filters):
-                        loss += 1e-3/lr * w[i,...].norm()
+                        loss += 1e-5/lr * w[i,...].norm()
 
             loss.backward()
             optimizer.step()
