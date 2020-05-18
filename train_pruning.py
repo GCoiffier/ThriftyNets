@@ -23,7 +23,8 @@ from thrifty.modules import MBConv
 
 def prune_zeros(model, tol=1e-2):
     # Model is a ThriftyNet
-    conv = model.Lblock.Lconv
+    blck = model.Lblock
+    conv = blck.Lconv
     if isinstance(conv, nn.Conv2d):
         w = conv.weight
         m, _, k, _ = w.size()
@@ -42,12 +43,16 @@ def prune_zeros(model, tol=1e-2):
         w2 = w2[to_keep,...][:,to_keep,...]
 
         new_n_filters = len(to_keep)
-        print("Pruned {}/{} filters\n".format(model.Lblock.n_filters - new_n_filters, model.Lblock.n_filters))
-        model.Lblock.n_filters = new_n_filters
-        model.Lblock.Lconv = MBConv(new_n_filters, new_n_filters)
-        model.Lblock.Lconv.conv1.weight = nn.Parameter(w1)
-        model.Lblock.Lconv.conv2.weight = nn.Parameter(w2)
+        print("Pruned {}/{} filters\n".format(blck.n_filters - new_n_filters, blck.n_filters))
+        blck.n_filters = new_n_filters
+        blck.Lconv = MBConv(new_n_filters, new_n_filters)
+        blck.Lconv.conv1.weight = nn.Parameter(w1)
+        blck.Lconv.conv2.weight = nn.Parameter(w2)
 
+        for t in range(blck.n_iter):
+            w,b = blck.Lnormalization[t].weight, blck.Lnormalization[t].bias
+            blck.Lnormalization[t].weight = nn.Parameter(w[to_keep])
+            blck.Lnormalization[t].bias = nn.Parameter(b[to_keep])
     else:
         raise Exception("Pruning impossible")
 
@@ -179,7 +184,7 @@ if __name__ == '__main__':
             logger.update({"test_acc(top{})".format(k) : test_acc[i]})
         
         if epoch%10==0:
-            lr = optimizer.state_dict()["param_groups"][0]["lr"]/10
+            lr /= 10
         print()
 
         prune_zeros(model)
