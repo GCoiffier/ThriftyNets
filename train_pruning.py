@@ -42,7 +42,7 @@ def prune_zeros(model, tol=1e-3):
         w1 = w1[to_keep, ...]
         w2 = w2[to_keep,...][:,to_keep,...]
 
-        old_n_filters = block.n_filters
+        old_n_filters = blck.n_filters
         new_n_filters = len(to_keep)
         blck.n_filters = new_n_filters
         blck.Lconv = MBConv(new_n_filters, new_n_filters)
