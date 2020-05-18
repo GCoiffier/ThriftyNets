@@ -60,7 +60,7 @@ def prune_zeros(model, tol=1e-2):
         model.LOutput = nn.Linear(new_n_filters, model.n_classes)
         model.LOutput.weight = nn.Parameter(w[:,to_keep])
         model.LOutput.bias = nn.Parameter(b)
-        
+
     else:
         raise Exception("Pruning impossible")
 
@@ -156,7 +156,7 @@ if __name__ == '__main__':
             if isinstance(model.Lblock.Lconv, MBConv):
                 w = model.Lblock.Lconv.conv1.weight
                 for i in range(n_filters):
-                    loss += w[i,...].norm()
+                    loss += 1e-4/lr * w[i,...].norm()
 
             loss.backward()
             optimizer.step()
