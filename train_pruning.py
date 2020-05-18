@@ -51,6 +51,7 @@ def prune_zeros(model, tol=1e-2):
 
         for t in range(blck.n_iter):
             w,b = blck.Lnormalization[t].weight, blck.Lnormalization[t].bias
+            blck.Lnormalization[t] = nn.BatchNorm2d(new_n_filters)
             blck.Lnormalization[t].weight = nn.Parameter(w[to_keep])
             blck.Lnormalization[t].bias = nn.Parameter(b[to_keep])
     else:
