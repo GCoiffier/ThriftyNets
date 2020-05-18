@@ -23,14 +23,14 @@ from thrifty.modules import MBConv
 
 def prune_zeros(model, tol=1e-2):
     # Model is a ThriftyNet
-    blck = model.Lblock
-    if isinstance(blck.Lconv, nn.Conv2d):
-        w = blck.Lconv.weight
+    conv = model.Lblock.Lconv
+    if isinstance(conv, nn.Conv2d):
+        w = conv.weight
         m, _, k, _ = w.size()
         to_keep = []
-    elif isinstance(blck.Lconv, MBConv):
-        w1 = blck.conv1.weight
-        w2 = blck.conv2.weight
+    elif isinstance(conv, MBConv):
+        w1 = conv.conv1.weight
+        w2 = conv.conv2.weight
         m, _, k, _ = w1.size() # size (m, 1, k, k)
         # w2 is of size (m, m, 1, 1)
         to_keep = []
