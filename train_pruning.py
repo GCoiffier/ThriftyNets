@@ -21,7 +21,7 @@ from common import utils
 from thrifty.models import get_model
 from thrifty.modules import MBConv
 
-def prune_zeros(model, optim, tol=1e-3):
+def prune_zeros(model, tol=1e-4):
     # Model is a ThriftyNet
     blck = model.Lblock
     conv = blck.Lconv
@@ -63,8 +63,6 @@ def prune_zeros(model, optim, tol=1e-3):
     else:
         raise Exception("Pruning impossible")
 
-    optim.param_groups = model.parameters()
-    
     model.n_parameters = sum(p.numel() for p in model.parameters())
     print("Pruned {}/{} filters, {} parameters\n".format(old_n_filters - new_n_filters, blck.n_filters, model.n_parameters))
 
@@ -162,7 +160,7 @@ if __name__ == '__main__':
             if isinstance(model.Lblock.Lconv, MBConv):
                 w = model.Lblock.Lconv.conv1.weight
                 for i in range(n_filters):
-                    loss += 1e-4 * w[i,...].norm()
+                    loss += args.lbmd * w[i,...].norm()
 
             loss.backward()
             optimizer.step()
@@ -203,9 +201,10 @@ if __name__ == '__main__':
         lr = optimizer.state_dict()["param_groups"][0]["lr"]
         print()
 
-        prune_zeros(model, optim)
+        prune_zeros(model)
         logger.update({"params" : model.n_parameters})
         model = model.to(device)
+        optim.param_groups = model.parameters()
 
         if args.checkpoint_freq != 0 and epoch%args.checkpoint_freq == 0:
             name = args.name+ "_e" + str(epoch) + "_acc{:d}.model".format(int(10000*logger["test_acc(top1)"]))
