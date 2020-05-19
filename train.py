@@ -155,7 +155,7 @@ if __name__ == '__main__':
         test_loss /= len(test_loader.dataset)
         test_acc /= len(test_loader)
 
-        plot_alphas(model.Lblock, "alpha_e{}.txt".format(epoch))
+        # plot_alphas(model.Lblock, "alpha_e{}.txt".format(epoch))
 
         logger.update({"test_loss" : test_loss})
         for i,k in enumerate(topk):
