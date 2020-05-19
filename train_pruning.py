@@ -21,7 +21,7 @@ from common import utils
 from thrifty.models import get_model
 from thrifty.modules import MBConv
 
-def prune_zeros(model, tol=1e-3):
+def prune_zeros(model, tol=1e-5):
     # Model is a ThriftyNet
     blck = model.Lblock
     conv = blck.Lconv
@@ -154,12 +154,11 @@ if __name__ == '__main__':
             loss = F.cross_entropy(output, target)
             avg_loss += loss.item()
 
-            if lr<1e-3:
-                n_filters = model.Lblock.n_filters
-                if isinstance(model.Lblock.Lconv, MBConv):
-                    w = model.Lblock.Lconv.conv1.weight
-                    for i in range(n_filters):
-                        loss += 1e-5/lr * w[i,...].norm()
+            n_filters = model.Lblock.n_filters
+            if isinstance(model.Lblock.Lconv, MBConv):
+                w = model.Lblock.Lconv.conv1.weight
+                for i in range(n_filters):
+                    loss += 1e-5 * w[i,...].norm()
 
             loss.backward()
             optimizer.step()
