@@ -103,7 +103,7 @@ class ResNetEmbedder(nn.Module):
     def __init__(self, in_channels, block, num_block, num_classes=100):
         super().__init__()
 
-        self.in_channel = in_channels
+        self.in_channels = in_channels
 
         self.conv1 = nn.Sequential(
             nn.Conv2d(3, self.in_channels, kernel_size=3, padding=1, bias=False),
