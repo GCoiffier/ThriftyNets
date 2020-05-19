@@ -21,7 +21,7 @@ from common import utils
 from thrifty.models import get_model
 from thrifty.modules import MBConv
 
-def prune_zeros(model, tol=1e-3):
+def prune_zeros(model, optim, tol=1e-3):
     # Model is a ThriftyNet
     blck = model.Lblock
     conv = blck.Lconv
@@ -63,6 +63,8 @@ def prune_zeros(model, tol=1e-3):
     else:
         raise Exception("Pruning impossible")
 
+    optim.param_groups = model.parameters()
+    
     model.n_parameters = sum(p.numel() for p in model.parameters())
     print("Pruned {}/{} filters, {} parameters\n".format(old_n_filters - new_n_filters, blck.n_filters, model.n_parameters))
 
@@ -70,6 +72,7 @@ def prune_zeros(model, tol=1e-3):
 if __name__ == '__main__':
 
     parser = utils.args()
+    parser.add_argument("-lmbd", "--lmbd", type=float, default=1e-4)
     args = parser.parse_args()
     print(args)
     
@@ -108,6 +111,13 @@ if __name__ == '__main__':
 
     model = model.to(device)
     scheduler = None
+    if args.optimizer=="sgd":
+        optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
+        scheduler = ReduceLROnPlateau(optimizer, factor=args.gamma, patience=args.patience, min_lr=args.min_lr)
+        # scheduler = StepLR(optimizer, 100, gamma=0.1)
+    elif args.optimizer=="adam":
+        optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
+
     try:
         os.mkdir("logs")
     except:
@@ -123,13 +133,8 @@ if __name__ == '__main__':
     print("-"*80 + "\n")
     test_loss = 0
     test_acc = torch.zeros(len(topk))
-    lr = args.learning_rate
+    lr = optimizer.state_dict()["param_groups"][0]["lr"]
     for epoch in range(1, args.epochs + 1):
-
-        if args.optimizer=="sgd":
-            optimizer = optim.SGD(model.parameters(), lr=lr, momentum=args.momentum, weight_decay=args.weight_decay)
-        elif args.optimizer=="adam":
-            optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=args.weight_decay)
 
         t0 = time.time()
         logger.update({"Epoch" :  epoch, "lr" : lr})
@@ -150,7 +155,6 @@ if __name__ == '__main__':
             optimizer.zero_grad()
             output = model(data)
             
-            
             loss = F.cross_entropy(output, target)
             avg_loss += loss.item()
 
@@ -169,6 +173,7 @@ if __name__ == '__main__':
             for i,k in enumerate(topk):
                 tqdm_log += "Train_acc(top{}): {:.3f}, Test_acc(top{}): {:.3f}, ".format(k, acc_score[i], k, test_acc[i])
             tqdm.write(tqdm_log)
+            break
 
         logger.update({"epoch_time" : (time.time() - t0)/60 })
         logger.update({"train_loss" : loss.item()})
@@ -193,11 +198,12 @@ if __name__ == '__main__':
         for i,k in enumerate(topk):
             logger.update({"test_acc(top{})".format(k) : test_acc[i]})
         
-        if epoch%20==0:
-            lr /= 10
+        if scheduler is not None:
+            scheduler.step(logger["test_loss"])
+        lr = optimizer.state_dict()["param_groups"][0]["lr"]
         print()
 
-        prune_zeros(model)
+        prune_zeros(model, optim)
         logger.update({"params" : model.n_parameters})
         model = model.to(device)
 
