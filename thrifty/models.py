@@ -1,12 +1,13 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision.models import resnet
+#from torchvision.models import resnet
 
 import numpy as np
 from .modules import *
 from .activations import get_activ
-from .resnet_models import resnet18
+from .resnet_models import *
+
 """
 Parameters
 ----------
@@ -31,7 +32,7 @@ def get_model(args, metadata):
                                  n_history=args.history, conv_mode=args.conv_mode,
                                  activ=args.activ, bias=args.bias)
     elif model_name in ["embedded_thrifty", "embeddedthrifty"]:
-        return EmbeddedThriftyNet(args.filters, args.iter)
+        return EmbeddedThriftyNet(metadata["input_shape"], metadata["n_classes"], args.filters, args.iter, args.history, args.pool, activ=args.activ, conv_mode=args.conv_mode, bias=args.bias)
 
     elif model_name == "resnet18":
         return resnet18(metadata["input_shape"], metadata["n_classes"], args.filters)
@@ -159,22 +160,27 @@ class EmbeddedThriftyNet(nn.Module):
     The first blocks of a Resnet, followed by a Thrifty block
     """
 
-    def __init__(self, n_filters, n_iter, n_history, pool_strategy, activ="relu", conv_mode="classic", bias=False):
+    def __init__(self, input_shape, n_classes, n_filters, n_iter, n_history, pool_strategy, activ="relu", conv_mode="classic", bias=False):
         super(EmbeddedThriftyNet, self).__init__()
-        self.embed_shape = (128,28,28) # output shape of the embedder
+        self.n_classes = n_classes
+        self.input_shape = input_shape
+        self.n_filters = n_filters
+        self.pool_strategy = pool_strategy
+        self.embed_shape = (64,16,16) # output shape of the embedder
         
-        self.Lembed = ResNetEmbedder(resnet.BasicBlock, [3, 4])
-        self.Lthrifty = ThriftyBlock(n_filters, n_iter, n_history, pool_strategy,conv_mode=conv_mode, activ=activ, bias=bias)
+        self.Lembed = ResNetEmbedder(BasicBlock, [1, 1])
+        self.Lthrifty = ThriftyBlock(n_filters, n_iter, n_history, pool_strategy, conv_mode=conv_mode, activ=activ, bias=bias)
         self.LOutput = nn.Linear(n_filters, self.n_classes)
 
         self.n_parameters = sum(p.numel() for p in self.parameters())
         print("Embedding parameters: ", self.Lembed.n_parameters)
         print("Thrifty parameters: ", self.Lthrifty.n_parameters)
-        print("Total parameters: ", self.n_parameters)
+        # print("Total parameters: ", self.n_parameters)
 
     def forward(self, x):        
         x = self.Lembed(x)
-        x = F.pad(x, (2, 2, 2, 2, 0, self.n_filters - self.embed_shape[0]))
+        #x = F.pad(x, (2, 2, 2, 2, 0, self.n_filters - self.embed_shape[0]))
+        x = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.embed_shape[0]))
         x = self.Lthrifty(x) 
         out = F.adaptive_max_pool2d(x, (1,1))[:,:,0,0]
         return self.LOutput(out)

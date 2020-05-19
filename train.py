@@ -115,7 +115,8 @@ if __name__ == '__main__':
             
             loss = F.cross_entropy(output, target)
             avg_loss += loss.item()
-
+            
+            """
             alpha_loss = F.relu(model.Lblock.alpha - 2) + F.relu(-model.Lblock.alpha)
             loss += alpha_loss.sum()
 
@@ -123,6 +124,7 @@ if __name__ == '__main__':
             for i in range(model.Lblock.alpha.size()[0]):
                 line_i = model.Lblock.alpha[i,1:]
                 l1_loss += F.l1_loss(line_i, torch.zeros_like(line_i))
+            """
 
             loss.backward()
             optimizer.step()
