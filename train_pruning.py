@@ -171,7 +171,6 @@ if __name__ == '__main__':
             for i,k in enumerate(topk):
                 tqdm_log += "Train_acc(top{}): {:.3f}, Test_acc(top{}): {:.3f}, ".format(k, acc_score[i], k, test_acc[i])
             tqdm.write(tqdm_log)
-            break
 
         logger.update({"epoch_time" : (time.time() - t0)/60 })
         logger.update({"train_loss" : loss.item()})
