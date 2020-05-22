@@ -1,4 +1,7 @@
-"""resnet in pytorch
+"""
+/!\ Experimental stuff below
+
+resnet in pytorch :
 [1] Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun.
     Deep Residual Learning for Image Recognition
     https://arxiv.org/abs/1512.03385v1
@@ -8,71 +11,11 @@ https://github.com/weiaicunzai/pytorch-cifar100/blob/master/models/resnet.py
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+from .modules import MBConv
+from .activations import get_activ
 
-class BasicBlock(nn.Module):
-    """Basic Block for resnet 18 and resnet 34
-    """
-
-    #BasicBlock and BottleNeck block 
-    #have different output size
-    #we use class attribute expansion
-    #to distinct
-    expansion = 1
-
-    def __init__(self, in_channels, out_channels, stride=1):
-        super().__init__()
-
-        #residual function
-        self.residual_function = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels * BasicBlock.expansion, kernel_size=3, padding=1, bias=False),
-            nn.BatchNorm2d(out_channels * BasicBlock.expansion)
-        )
-
-        #shortcut
-        self.shortcut = nn.Sequential()
-
-        #the shortcut output dimension is not the same with residual function
-        #use 1*1 convolution to match the dimension
-        if stride != 1 or in_channels != BasicBlock.expansion * out_channels:
-            self.shortcut = nn.Sequential(
-                nn.Conv2d(in_channels, out_channels * BasicBlock.expansion, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(out_channels * BasicBlock.expansion)
-            )
-        
-    def forward(self, x):
-        return nn.ReLU(inplace=True)(self.residual_function(x) + self.shortcut(x))
-
-class BottleNeck(nn.Module):
-    """Residual block for resnet over 50 layers
-    """
-    expansion = 4
-    def __init__(self, in_channels, out_channels, stride=1):
-        super().__init__()
-        self.residual_function = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, stride=stride, kernel_size=3, padding=1, bias=False),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels * BottleNeck.expansion, kernel_size=1, bias=False),
-            nn.BatchNorm2d(out_channels * BottleNeck.expansion),
-        )
-
-        self.shortcut = nn.Sequential()
-
-        if stride != 1 or in_channels != out_channels * BottleNeck.expansion:
-            self.shortcut = nn.Sequential(
-                nn.Conv2d(in_channels, out_channels * BottleNeck.expansion, stride=stride, kernel_size=1, bias=False),
-                nn.BatchNorm2d(out_channels * BottleNeck.expansion)
-            )
-        
-    def forward(self, x):
-        return nn.ReLU(inplace=True)(self.residual_function(x) + self.shortcut(x))
-    
+## ----------------- 1/ Resnets -------------------------------    
 class ResNet(nn.Module):
 
     def __init__(self, block, num_block, num_classes=100):
@@ -153,3 +96,69 @@ def resnet152():
     """ return a ResNet 152 object
     """
     return ResNet(BottleNeck, [3, 8, 36, 3])
+
+## ----------------- 1/ Unfactorized ThriftyNets -------------------------------
+
+class OneConv(nn.Module):
+    def __init__(self, n_filters, activ="relu", conv_mode="classic", bias=False):
+        super(OneConv, self).__init__()
+        self.n_filters = n_filters
+        self.conv_mode = conv_mode
+        self.bias = bias
+
+        if self.conv_mode=="classic":
+            self.Lconv = nn.Conv2d(n_filters, n_filters, kernel_size=3, stride=1, padding=1, bias=self.bias)
+        elif self.conv_mode=="mb1":
+            self.Lconv = MBConv(n_filters, n_filters, bias=self.bias)
+        elif self.conv_mode=="mb2":
+            self.Lconv = MBConv(n_filters, n_filters//2, bias=self.bias)
+        elif self.conv_mode=="mb4":
+            self.Lconv = MBConv(n_filters, n_filters//4, bias=self.bias)
+        self.activ = get_activ(activ)
+        self.LBN = nn.BatchNorm2d(self.n_filters)
+
+        self.alphas = torch.Tensor([0.1, 0.9])
+        self.alphas = nn.Parameter(self.alphas)
+
+    def forward(self, x):
+        x2 = self.activ(self.Lconv(x))
+        out = self.alphas[0] * x2 + self.alphas[1] * x
+        return self.LBN(out)
+
+class UnfactorThriftyNet(nn.Module):
+    """
+    A ThriftyNet where the convolution is no longer factorized
+    """
+    def __init__(self, input_shape, n_classes, n_filters, n_iter, pool_strategy, activ="relu", conv_mode="classic", bias=False):
+        super(UnfactorThriftyNet, self).__init__()
+        self.input_shape = input_shape
+        self.n_classes = n_classes
+        self.n_filters = n_filters
+        self.n_iter = n_iter
+
+        self.pool_strategy = [False]*self.n_iter
+        assert isinstance(pool_strategy, list) or isinstance(pool_strategy, tuple)
+        if len(pool_strategy)==1:
+            self.n_pool = 0
+            freq = pool_strategy[0]
+            for i in range(self.n_iter):
+                if (i%freq == freq-1):
+                    self.pool_strategy[i] = True
+                    self.n_pool +=1
+        else:
+            self.n_pool = len(pool_strategy)
+            for x in pool_strategy:
+                self.pool_strategy[x] = True
+       
+        self.LOutput = nn.Linear(n_filters, n_classes)
+        self.LConv = nn.ModuleList([OneConv(n_filters, activ, conv_mode, bias) for x in range(n_iter)])
+        self.n_parameters = sum(p.numel() for p in self.parameters())
+
+    def forward(self, x):
+        x = F.pad(x, (0, 0, 0, 0, 0, self.n_filters - self.input_shape[0]))
+        for t in range(self.n_iter):
+            x = self.LConv[t](x)
+            if self.pool_strategy[t]:
+                x = F.max_pool2d(x, 2)
+        out = F.adaptive_max_pool2d(x, (1,1))[:,:,0,0]
+        return self.LOutput(out)

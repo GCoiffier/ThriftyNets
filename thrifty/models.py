@@ -6,7 +6,6 @@ import torch.nn.functional as F
 import numpy as np
 from .modules import *
 from .activations import get_activ
-from .resnet_models import *
 
 """
 Parameters
@@ -33,10 +32,7 @@ def get_model(args, metadata):
                                  activ=args.activ, bias=args.bias)
     elif model_name in ["embedded_thrifty", "embeddedthrifty"]:
         return EmbeddedThriftyNet(metadata["input_shape"], metadata["n_classes"], args.filters, args.iter, args.history, args.pool, activ=args.activ, conv_mode=args.conv_mode, bias=args.bias)
-
-    elif model_name == "resnet18":
-        return resnet18(metadata["input_shape"], metadata["n_classes"], args.filters)
-
+        
     else:
         raise Exception("Model type was not recognized")
 
