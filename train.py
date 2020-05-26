@@ -49,6 +49,7 @@ if __name__ == '__main__':
     #model = get_model(args, metadata)
     #model = UnfactorThriftyNet(metadata["input_shape"], metadata["n_classes"], args.filters, args.iter, args.pool, args.activ, args.conv_mode, args.bias)
     model = factorized_resnet18(metadata["n_classes"])
+    model.conv.to(device)
 
     if args.n_params is not None and args.model not in ["block_thrifty", "blockthrifty"]:
         n = model.n_parameters
