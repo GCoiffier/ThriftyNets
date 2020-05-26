@@ -151,14 +151,14 @@ class FactorizedResNet(nn.Module):
         #we use a different inputsize than the original paper
         #so conv2_x's stride is 1
         
-        self.blocks = [
+        self.blocks = nn.ModuleList([
             BasicBlock(64,  128, 2),
             BasicBlock(128, 128, 1),
             BasicBlock(128, 256, 2),
             BasicBlock(256, 256, 1),
             BasicBlock(256, 512, 2),
             BasicBlock(512, 512, 1),
-        ]
+        ])
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512, num_classes)
 

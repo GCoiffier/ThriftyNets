@@ -72,7 +72,6 @@ if __name__ == '__main__':
         model.load_state_dict(torch.load(args.resume)["state_dict"])
 
     model = model.to(device)
-    model.conv.to(device)
     
     scheduler = None
     if args.optimizer=="sgd":
