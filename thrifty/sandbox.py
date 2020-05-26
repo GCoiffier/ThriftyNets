@@ -100,7 +100,113 @@ def resnet152():
     """
     return ResNet(BottleNeck, [3, 8, 36, 3])
 
-## ----------------- 1/ Unfactorized ThriftyNets -------------------------------
+## ------ 2/ Factorized Resnet ---------------------
+
+class BasicBlock(nn.Module):
+    """
+    Basic Block for resnet 18 and resnet 34
+    """
+
+    def __init__(self, in_channels, out_channels, stride=1):
+        super().__init__()
+
+        self.stride = stride
+        self.inc = in_channels
+        self.outc = out_channels
+
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+
+        #the shortcut output dimension is not the same with residual function
+        #use 1*1 convolution to match the dimension
+        if stride != 1 or in_channels != out_channels:
+            self.bn3 = nn.BatchNorm2d(out_channels)
+        
+    def forward(self, x, conv):
+
+        # residual function
+        res = F.conv2d(x, conv[:self.outc, :self.inc, ...], stride=self.stride, padding=1)
+        res = self.bn1(res)
+        res = F.relu(res)
+        res = F.conv2d(res, conv[:self.outc, :self.outc, ...], padding=1)
+        res = self.bn2(res)
+
+        # shortcut
+        if self.stride != 1 or self.inc != self.outc :
+            sc = F.conv2d(x, conv[:self.outc, :self.inc, 1:2, 1:2], stride=self.stride)
+            sc = self.bn3(sc)
+        else:
+            sc = x
+
+        return F.relu(res + sc)
+
+class ResnetLayer(nn.Module):
+
+    def __init__(self, block, in_channels, out_channels, num_blocks, stride):
+        """make resnet layers(by layer i didnt mean this 'layer' was the 
+        same as a neuron network layer, ex. conv layer), one layer may 
+        contain more than one residual block 
+        Args:
+            block: block type, basic block or bottle neck block
+            out_channels: output depth channel number of this layer
+            num_blocks: how many blocks per layer
+            stride: the stride of the first block of this layer
+        
+        Return:
+            return a resnet layer
+        """
+        super().__init__()
+
+        # we have num_block blocks per layer, the first block 
+        # could be 1 or 2, other blocks would always be 1
+        strides = [stride] + [1] * (num_blocks - 1)
+        self.layers = []
+        for strd in strides:
+            self.layers.append(block(in_channels, out_channels, strd))
+        
+    def forward(self, x, conv):
+        for layer in self.layers:
+            x = layer(x, conv)
+        return x
+        
+
+class FactorizedResNet(nn.Module):
+
+    def __init__(self, block, num_block, num_classes=100):
+        super().__init__()
+
+        self.conv = nn.Conv2d(512,512,3).weight
+        self.bn1 = nn.BatchNorm2d(64)
+
+        #we use a different inputsize than the original paper
+        #so conv2_x's stride is 1
+        
+        self.blocks = [
+            BasicBlock(64,  128, 2),
+            BasicBlock(128, 128, 1),
+            BasicBlock(128, 256, 2),
+            BasicBlock(256, 256, 1),
+            BasicBlock(256, 512, 2),
+            BasicBlock(512, 512, 1),
+        ]
+        self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc = nn.Linear(512, num_classes)
+
+    def forward(self, x):
+        x = F.conv2d(x, self.conv[:64, :3, ...], padding=1)
+        x = F.relu(self.bn1(x))
+        for blck in self.blocks:
+            x = blck(x, self.conv)
+        output = self.avg_pool(x)
+        output = output.view(output.size(0), -1)
+        output = self.fc(output)
+
+        return output 
+
+def factorized_resnet18(nb_classes):
+    return FactorizedResNet(BasicBlock, [2, 2, 2, 2], nb_classes)
+
+## ----------------- 3/ Unfactorized ThriftyNets -------------------------------
 
 class OneConv(nn.Module):
     def __init__(self, n_filters, activ="relu", conv_mode="classic", bias=False):
@@ -166,106 +272,3 @@ class UnfactorThriftyNet(nn.Module):
         out = F.adaptive_max_pool2d(x, (1,1))[:,:,0,0]
         return self.LOutput(out)
 
-## ------ 2/ Factorized Densenet ---------------------
-# https://github.com/bamos/densenet.pytorch/blob/master/densenet.py
-
-class DN_Bottleneck(nn.Module):
-    def __init__(self, nChannels, growthRate):
-        super(DN_Bottleneck, self).__init__()
-        interChannels = 4*growthRate
-        self.bn1 = nn.BatchNorm2d(nChannels)
-        self.conv1 = nn.Conv2d(nChannels, interChannels, kernel_size=1,
-                               bias=False)
-        self.bn2 = nn.BatchNorm2d(interChannels)
-        self.conv2 = nn.Conv2d(interChannels, growthRate, kernel_size=3,
-                               padding=1, bias=False)
-
-    def forward(self, x):
-        out = self.conv1(F.relu(self.bn1(x)))
-        out = self.conv2(F.relu(self.bn2(out)))
-        out = torch.cat((x, out), 1)
-        return out
-
-class DN_SingleLayer(nn.Module):
-    def __init__(self, nChannels, growthRate):
-        super(DN_SingleLayer, self).__init__()
-        self.bn1 = nn.BatchNorm2d(nChannels)
-        self.conv1 = nn.Conv2d(nChannels, growthRate, kernel_size=3,
-                               padding=1, bias=False)
-
-    def forward(self, x):
-        out = self.conv1(F.relu(self.bn1(x)))
-        out = torch.cat((x, out), 1)
-        return out
-
-class DN_Transition(nn.Module):
-    def __init__(self, nChannels, nOutChannels):
-        super(DN_Transition, self).__init__()
-        self.bn1 = nn.BatchNorm2d(nChannels)
-        self.conv1 = nn.Conv2d(nChannels, nOutChannels, kernel_size=1,
-                               bias=False)
-
-    def forward(self, x):
-        out = self.conv1(F.relu(self.bn1(x)))
-        out = F.avg_pool2d(out, 2)
-        return out
-
-
-class DenseNet(nn.Module):
-    def __init__(self, nClasses, growthRate=12, depth=100, reduction=1, bottleneck=True):
-        super(DenseNet, self).__init__()
-
-        nDenseBlocks = (depth-4) // 3
-        if bottleneck:
-            nDenseBlocks //= 2
-
-        nChannels = 2*growthRate
-        self.conv1 = nn.Conv2d(3, nChannels, kernel_size=3, padding=1,
-                               bias=False)
-        self.dense1 = self._make_dense(nChannels, growthRate, nDenseBlocks, bottleneck)
-        nChannels += nDenseBlocks*growthRate
-        nOutChannels = int(math.floor(nChannels*reduction))
-        self.trans1 = DN_Transition(nChannels, nOutChannels)
-
-        nChannels = nOutChannels
-        self.dense2 = self._make_dense(nChannels, growthRate, nDenseBlocks, bottleneck)
-        nChannels += nDenseBlocks*growthRate
-        nOutChannels = int(math.floor(nChannels*reduction))
-        self.trans2 = DN_Transition(nChannels, nOutChannels)
-
-        nChannels = nOutChannels
-        self.dense3 = self._make_dense(nChannels, growthRate, nDenseBlocks, bottleneck)
-        nChannels += nDenseBlocks*growthRate
-
-        self.bn1 = nn.BatchNorm2d(nChannels)
-        self.fc = nn.Linear(nChannels, nClasses)
-
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                print(m.kernel_size, m.in_channels, m.out_channels)
-                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
-            elif isinstance(m, nn.BatchNorm2d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
-            elif isinstance(m, nn.Linear):
-                m.bias.data.zero_()
-
-    def _make_dense(self, nChannels, growthRate, nDenseBlocks, bottleneck):
-        layers = []
-        for i in range(int(nDenseBlocks)):
-            if bottleneck:
-                layers.append(DN_Bottleneck(nChannels, growthRate))
-            else:
-                layers.append(DN_SingleLayer(nChannels, growthRate))
-            nChannels += growthRate
-        return nn.Sequential(*layers)
-
-    def forward(self, x):
-        out = self.conv1(x)
-        out = self.trans1(self.dense1(out))
-        out = self.trans2(self.dense2(out))
-        out = self.dense3(out)
-        out = torch.squeeze(F.avg_pool2d(F.relu(self.bn1(out)), 8))
-        out = self.fc(out)
-        return out
