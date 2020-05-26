@@ -140,36 +140,6 @@ class BasicBlock(nn.Module):
 
         return F.relu(res + sc)
 
-class ResnetLayer(nn.Module):
-
-    def __init__(self, block, in_channels, out_channels, num_blocks, stride):
-        """make resnet layers(by layer i didnt mean this 'layer' was the 
-        same as a neuron network layer, ex. conv layer), one layer may 
-        contain more than one residual block 
-        Args:
-            block: block type, basic block or bottle neck block
-            out_channels: output depth channel number of this layer
-            num_blocks: how many blocks per layer
-            stride: the stride of the first block of this layer
-        
-        Return:
-            return a resnet layer
-        """
-        super().__init__()
-
-        # we have num_block blocks per layer, the first block 
-        # could be 1 or 2, other blocks would always be 1
-        strides = [stride] + [1] * (num_blocks - 1)
-        self.layers = []
-        for strd in strides:
-            self.layers.append(block(in_channels, out_channels, strd))
-        
-    def forward(self, x, conv):
-        for layer in self.layers:
-            x = layer(x, conv)
-        return x
-        
-
 class FactorizedResNet(nn.Module):
 
     def __init__(self, block, num_block, num_classes=100):
@@ -204,7 +174,7 @@ class FactorizedResNet(nn.Module):
         return output 
 
 def factorized_resnet18(nb_classes):
-    return FactorizedResNet(BasicBlock, [2, 2, 2, 2], nb_classes)
+    return FactorizedResNet(BasicBlock, nb_classes)
 
 ## ----------------- 3/ Unfactorized ThriftyNets -------------------------------
 
