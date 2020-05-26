@@ -47,8 +47,9 @@ if __name__ == '__main__':
             topk=(1,)
 
     #model = get_model(args, metadata)
-    model = UnfactorThriftyNet(metadata["input_shape"], metadata["n_classes"], args.filters, args.iter, args.pool, args.activ, args.conv_mode, args.bias)
-    
+    #model = UnfactorThriftyNet(metadata["input_shape"], metadata["n_classes"], args.filters, args.iter, args.pool, args.activ, args.conv_mode, args.bias)
+    model = DenseNet(metadata["n_classes"], 12, 100, 2, True)
+
     if args.n_params is not None and args.model not in ["block_thrifty", "blockthrifty"]:
         n = model.n_parameters
         if n<args.n_params:
@@ -62,9 +63,9 @@ if __name__ == '__main__':
                 model = get_model(args,metadata)
                 n = model.n_parameters
 
-    print("N parameters : ", model.n_parameters)
-    print("N filters : ", model.n_filters)
-    print("Pool strategy : ", model.pool_strategy)
+    print("N parameters : ", sum(p.numel() for p in model.parameters()))
+    # print("N filters : ", model.n_filters)
+    # print("Pool strategy : ", model.pool_strategy)
 
     if args.resume is not None:
         model.load_state_dict(torch.load(args.resume)["state_dict"])
