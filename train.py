@@ -63,7 +63,8 @@ if __name__ == '__main__':
                 model = get_model(args,metadata)
                 n = model.n_parameters
 
-    print("N parameters : ", sum(p.numel() for p in model.parameters()))
+    n_parameters = sum(p.numel() for p in model.parameters())
+    print("N parameters : ", n_parameters)
     # print("N filters : ", model.n_filters)
     # print("Pool strategy : ", model.pool_strategy)
 
@@ -87,8 +88,11 @@ if __name__ == '__main__':
 
     with open("logs/{}.log".format(args.name), "a") as f:
         f.write(str(args))
-        f.write("\nParameters : " + str(model.n_parameters))
-        f.write("\nFilters : " + str(model.n_filters))
+        f.write("\nParameters : " + str(n_parameters))
+        if hasattr(model, "n_filters"):
+            f.write("\nFilters : " + str(model.n_filters))
+        else:
+            f.write("\nFilters : _ ")
         f.write("\n*******\n")
 
     print("-"*80 + "\n")
