@@ -145,32 +145,45 @@ class FactorizedResNet(nn.Module):
     def __init__(self, block, num_block, num_classes=100):
         super().__init__()
 
-        self.conv = nn.Parameter(nn.Conv2d(512,512,3).weight)
-        self.bn1 = nn.BatchNorm2d(64)
+        self.conv = nn.Parameter(nn.Conv2d(256, 256, 3).weight)
+        self.bn1 = nn.BatchNorm2d(32)
 
         #we use a different inputsize than the original paper
         #so conv2_x's stride is 1
         
         self.blocks = nn.ModuleList([
+            # Resnet 34 [3, 4, 6, 3]
+            BasicBlock(32,  64, 2),
+            BasicBlock(64, 64, 1),
+            BasicBlock(64, 64, 1),
+
             BasicBlock(64,  128, 2),
             BasicBlock(128, 128, 1),
+            BasicBlock(128, 128, 1),
+            BasicBlock(128, 128, 1),
+
             BasicBlock(128, 256, 2),
             BasicBlock(256, 256, 1),
+            BasicBlock(256, 256, 1),
+            BasicBlock(256, 256, 1),
+            BasicBlock(256, 256, 1),
+            BasicBlock(256, 256, 1),
+
             BasicBlock(256, 512, 2),
+            BasicBlock(512, 512, 1),
             BasicBlock(512, 512, 1),
         ])
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(512, num_classes)
+        self.fc = nn.Linear(256, num_classes)
 
     def forward(self, x):
-        x = F.conv2d(x, self.conv[:64, :3, ...], padding=1)
+        x = F.conv2d(x, self.conv[:32, :3, ...], padding=1)
         x = F.relu(self.bn1(x))
         for blck in self.blocks:
             x = blck(x, self.conv)
         output = self.avg_pool(x)
         output = output.view(output.size(0), -1)
         output = self.fc(output)
-
         return output 
 
 def factorized_resnet18(nb_classes):
