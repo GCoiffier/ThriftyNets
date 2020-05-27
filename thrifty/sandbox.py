@@ -174,7 +174,7 @@ class FactorizedResNet(nn.Module):
             BasicBlock(512, 512, 1),
         ])
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(256, num_classes)
+        self.fc = nn.Linear(512, num_classes)
 
     def forward(self, x):
         x = F.conv2d(x, self.conv[:32, :3, ...], padding=1)
