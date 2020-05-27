@@ -145,7 +145,7 @@ class FactorizedResNet(nn.Module):
     def __init__(self, block, num_block, num_classes=100):
         super().__init__()
 
-        self.conv = nn.Parameter(nn.Conv2d(256, 256, 3).weight)
+        self.conv = nn.Parameter(nn.Conv2d(512, 512, 3).weight)
         self.bn1 = nn.BatchNorm2d(32)
 
         #we use a different inputsize than the original paper
