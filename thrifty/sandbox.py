@@ -147,13 +147,12 @@ class FactorizedResNet(nn.Module):
 
         self.conv = nn.Parameter(nn.Conv2d(512, 512, 3).weight)
         self.bn1 = nn.BatchNorm2d(32)
-
-        #we use a different inputsize than the original paper
-        #so conv2_x's stride is 1
         
         self.blocks = nn.ModuleList([
             # Resnet 34 [3, 4, 6, 3]
             BasicBlock(32,  64, 2),
+            BasicBlock(64, 64, 1),
+            BasicBlock(64, 64, 1),
             BasicBlock(64, 64, 1),
             BasicBlock(64, 64, 1),
 
@@ -161,8 +160,16 @@ class FactorizedResNet(nn.Module):
             BasicBlock(128, 128, 1),
             BasicBlock(128, 128, 1),
             BasicBlock(128, 128, 1),
+            BasicBlock(128, 128, 1),
+            BasicBlock(128, 128, 1),
+            BasicBlock(128, 128, 1),
+            BasicBlock(128, 128, 1),
 
             BasicBlock(128, 256, 2),
+            BasicBlock(256, 256, 1),
+            BasicBlock(256, 256, 1),
+            BasicBlock(256, 256, 1),
+            BasicBlock(256, 256, 1),
             BasicBlock(256, 256, 1),
             BasicBlock(256, 256, 1),
             BasicBlock(256, 256, 1),
