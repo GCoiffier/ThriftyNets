@@ -155,9 +155,10 @@ class FactorizedResNet(nn.Module):
             BasicBlock(64, 64, 1),
             BasicBlock(64, 64, 1),
             BasicBlock(64, 64, 1),
+            BasicBlock(64, 64, 1),
+            BasicBlock(64, 64, 1),
 
             BasicBlock(64,  128, 2),
-            BasicBlock(128, 128, 1),
             BasicBlock(128, 128, 1),
             BasicBlock(128, 128, 1),
             BasicBlock(128, 128, 1),
@@ -172,11 +173,12 @@ class FactorizedResNet(nn.Module):
             BasicBlock(256, 256, 1),
             BasicBlock(256, 256, 1),
             BasicBlock(256, 256, 1),
-            BasicBlock(256, 256, 1),
-            BasicBlock(256, 256, 1),
-            BasicBlock(256, 256, 1),
 
             BasicBlock(256, 512, 2),
+            BasicBlock(512, 512, 1),
+            BasicBlock(512, 512, 1),
+            BasicBlock(512, 512, 1),
+            BasicBlock(512, 512, 1),
             BasicBlock(512, 512, 1),
             BasicBlock(512, 512, 1),
         ])
