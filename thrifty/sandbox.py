@@ -124,7 +124,7 @@ class BasicBlock(nn.Module):
         if stride != 1 or in_channels != out_channels:
             self.bn3 = nn.BatchNorm2d(out_channels)
         
-    def forward(self, x, conv):
+    def forward(self, x, conv, sc_conv):
 
         # residual function
         res = F.conv2d(x, conv[:self.outc, :self.inc, ...], stride=self.stride, padding=1)
@@ -135,7 +135,7 @@ class BasicBlock(nn.Module):
 
         # shortcut
         if self.stride != 1 or self.inc != self.outc :
-            sc = F.conv2d(x, conv[:self.outc, :self.inc, 1:2, 1:2], stride=self.stride)
+            sc = F.conv2d(x, sc_conv[:self.outc, :self.inc, ...], stride=self.stride)
             sc = self.bn3(sc)
         else:
             sc = x
@@ -148,6 +148,7 @@ class FactorizedResNet(nn.Module):
         super().__init__()
 
         self.conv = nn.Parameter(nn.Conv2d(256, 256, 3).weight)
+        self.sc_conv = nn.Parameter(nn.Conv2d(256,256,1).weight)
         self.bn1 = nn.BatchNorm2d(32)
         
         self.blocks = nn.ModuleList([
@@ -169,15 +170,6 @@ class FactorizedResNet(nn.Module):
             BasicBlock(256, 256, 1),
             BasicBlock(256, 256, 1),
         ])
-        """
-        BasicBlock(256, 512, 2),
-        BasicBlock(512, 512, 1),
-        BasicBlock(512, 512, 1),
-        BasicBlock(512, 512, 1),
-        BasicBlock(512, 512, 1),
-        BasicBlock(512, 512, 1),
-        BasicBlock(512, 512, 1),
-        """
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(256, num_classes)
 
@@ -185,7 +177,7 @@ class FactorizedResNet(nn.Module):
         x = F.conv2d(x, self.conv[:32, :3, ...], padding=1)
         x = F.relu(self.bn1(x))
         for blck in self.blocks:
-            x = blck(x, self.conv)
+            x = blck(x, self.conv, self.sc_conv)
         output = self.avg_pool(x)
         output = output.view(output.size(0), -1)
         output = self.fc(output)
