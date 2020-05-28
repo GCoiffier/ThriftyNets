@@ -183,17 +183,16 @@ class FactorizedResNet(nn.Module):
             BasicBlock(256, 256, 1),
             BasicBlock(256, 256, 1),
             BasicBlock(256, 256, 1),
-
-            """
-            BasicBlock(256, 512, 2),
-            BasicBlock(512, 512, 1),
-            BasicBlock(512, 512, 1),
-            BasicBlock(512, 512, 1),
-            BasicBlock(512, 512, 1),
-            BasicBlock(512, 512, 1),
-            BasicBlock(512, 512, 1),
-            """
         ])
+        """
+        BasicBlock(256, 512, 2),
+        BasicBlock(512, 512, 1),
+        BasicBlock(512, 512, 1),
+        BasicBlock(512, 512, 1),
+        BasicBlock(512, 512, 1),
+        BasicBlock(512, 512, 1),
+        BasicBlock(512, 512, 1),
+        """
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(256, num_classes)
 
