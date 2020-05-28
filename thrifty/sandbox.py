@@ -117,6 +117,8 @@ class BasicBlock(nn.Module):
         self.bn1 = nn.BatchNorm2d(out_channels)
         self.bn2 = nn.BatchNorm2d(out_channels)
 
+        self.alphas = nn.Parameter(torch.Tensor([1.0,1.0]))
+
         #the shortcut output dimension is not the same with residual function
         #use 1*1 convolution to match the dimension
         if stride != 1 or in_channels != out_channels:
@@ -138,7 +140,7 @@ class BasicBlock(nn.Module):
         else:
             sc = x
 
-        return F.relu(res + sc)
+        return F.relu(self.alphas[0] * res + self.alphas[1] * sc)
 
 class FactorizedResNet(nn.Module):
 
