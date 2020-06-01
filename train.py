@@ -19,7 +19,6 @@ from common.datasets import get_data_loaders
 from common import utils
 
 from thrifty.models import get_model
-from thrifty.sandbox import *
 
 def plot_alphas(block,output_name):
     from thrifty.modules import ThriftyBlock
@@ -46,9 +45,7 @@ if __name__ == '__main__':
         else:
             topk=(1,)
 
-    #model = get_model(args, metadata)
-    #model = UnfactorThriftyNet(metadata["input_shape"], metadata["n_classes"], args.filters, args.iter, args.pool, args.activ, args.conv_mode, args.bias)
-    model = factorized_resnet18(metadata["n_classes"])
+    model = get_model(args, metadata)
 
     if args.n_params is not None and args.model not in ["block_thrifty", "blockthrifty"]:
         n = model.n_parameters
@@ -65,8 +62,8 @@ if __name__ == '__main__':
 
     n_parameters = sum(p.numel() for p in model.parameters())
     print("N parameters : ", n_parameters)
-    # print("N filters : ", model.n_filters)
-    # print("Pool strategy : ", model.pool_strategy)
+    print("N filters : ", model.n_filters)
+    print("Pool strategy : ", model.pool_strategy)
 
     if args.resume is not None:
         model.load_state_dict(torch.load(args.resume)["state_dict"])
