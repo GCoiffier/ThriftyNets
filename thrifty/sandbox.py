@@ -154,17 +154,26 @@ class FactorizedResNet(nn.Module):
         self.bn1 = nn.BatchNorm2d(64)
         
         # resnet18 : [2, 2, 2, 2]
+        # resnet34 : [3, 4, 6, 3]
         self.blocks = nn.ModuleList([
             BasicBlock(64, 64, 2),
+            BasicBlock(64, 64, 1),
             BasicBlock(64, 64, 1),
 
             BasicBlock(64, 128, 2),
             BasicBlock(128, 128, 1),
+            BasicBlock(128, 128, 1),
+            BasicBlock(128, 128, 1),
 
             BasicBlock(128, 256, 2),
             BasicBlock(256, 256, 1),
+            BasicBlock(256, 256, 1),
+            BasicBlock(256, 256, 1),
+            BasicBlock(256, 256, 1),
+            BasicBlock(256, 256, 1),
 
             BasicBlock(256, 256, 2),
+            BasicBlock(256, 256, 1)
             BasicBlock(256, 256, 1)
         ])
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
