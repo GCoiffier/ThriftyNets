@@ -127,7 +127,7 @@ class BasicBlock(nn.Module):
         # residual function
         res = F.conv2d(x, conv1[:self.outc, :self.inc, ...], stride=self.stride, padding=1)
         res = self.bn1(res)
-        res = F.relu(res)
+        res = F.tanh(res)
         
         res = F.conv2d(res, conv2[:self.outc, :self.outc, ...], padding=1)
         res = self.bn2(res)
@@ -139,7 +139,7 @@ class BasicBlock(nn.Module):
         else:
             sc = x
 
-        return F.relu(res + sc)
+        return F.tanh(res + sc)
 
 class FactorizedResNet(nn.Module):
 
@@ -182,7 +182,7 @@ class FactorizedResNet(nn.Module):
     def forward(self, x):
         #x = F.conv2d(x, self.conv[:64, :3, ...], padding=1)
         x = self.embed(x)
-        x = F.relu(self.bn1(x))
+        x = F.tanh(self.bn1(x))
         for blck in self.blocks:
             x = blck(x, self.conv1, self.conv2, self.sc_conv)
         output = self.avg_pool(x)
