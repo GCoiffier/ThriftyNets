@@ -117,20 +117,19 @@ class BasicBlock(nn.Module):
         self.bn1 = nn.BatchNorm2d(out_channels)
         self.bn2 = nn.BatchNorm2d(out_channels)
 
-        self.alphas = nn.Parameter(torch.Tensor([1.0,1.0]))
-
         #the shortcut output dimension is not the same with residual function
         #use 1*1 convolution to match the dimension
         if stride != 1 or in_channels != out_channels:
             self.bn3 = nn.BatchNorm2d(out_channels)
         
-    def forward(self, x, conv, sc_conv):
+    def forward(self, x, conv1, conv2, sc_conv):
 
         # residual function
-        res = F.conv2d(x, conv[:self.outc, :self.inc, ...], stride=self.stride, padding=1)
+        res = F.conv2d(x, conv1[:self.outc, :self.inc, ...], stride=self.stride, padding=1)
         res = self.bn1(res)
         res = F.relu(res)
-        res = F.conv2d(res, conv[:self.outc, :self.outc, ...], padding=1)
+        
+        res = F.conv2d(res, conv2[:self.outc, :self.outc, ...], padding=1)
         res = self.bn2(res)
 
         # shortcut
@@ -140,7 +139,7 @@ class BasicBlock(nn.Module):
         else:
             sc = x
 
-        return F.relu(self.alphas[0] * res + self.alphas[1] * sc)
+        return F.relu(res + sc)
 
 class FactorizedResNet(nn.Module):
 
@@ -148,8 +147,10 @@ class FactorizedResNet(nn.Module):
         super().__init__()
 
         self.embed = nn.Conv2d(3, 64, kernel_size=3, padding=1, bias=False)
-        self.conv = nn.Parameter(nn.Conv2d(256, 256, 3).weight)
+        self.conv1 = nn.Parameter(nn.Conv2d(256, 256, 3).weight)
+        self.conv2 = nn.Parameter(nn.Conv2d(256, 256, 3).weight)
         self.sc_conv = nn.Parameter(nn.Conv2d(256, 256, 1).weight)
+        
         self.bn1 = nn.BatchNorm2d(64)
         
         # resnet18 : [2, 2, 2, 2]
@@ -174,7 +175,7 @@ class FactorizedResNet(nn.Module):
         x = self.embed(x)
         x = F.relu(self.bn1(x))
         for blck in self.blocks:
-            x = blck(x, self.conv, self.sc_conv)
+            x = blck(x, self.conv1, self.conv2, self.sc_conv)
         output = self.avg_pool(x)
         output = output.view(output.size(0), -1)
         output = self.fc(output)
