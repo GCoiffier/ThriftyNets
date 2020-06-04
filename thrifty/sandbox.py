@@ -173,7 +173,7 @@ class FactorizedResNet(nn.Module):
             BasicBlock(256, 256, 1),
 
             BasicBlock(256, 256, 2),
-            BasicBlock(256, 256, 1)
+            BasicBlock(256, 256, 1),
             BasicBlock(256, 256, 1)
         ])
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
