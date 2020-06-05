@@ -85,6 +85,7 @@ class ThriftyBlock(nn.Module):
                     a = a + self.alpha[t,i+1] * x
 
             a = self.Lnormalization[t](a)
+            a = F.dropout2d(a)
             
             for i in range(1, self.n_history-1):
                 hist[i] = hist[i+1]
