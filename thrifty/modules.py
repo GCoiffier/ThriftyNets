@@ -80,13 +80,13 @@ class ThriftyBlock(nn.Module):
             a = self.Lconv(hist[-1])
             a = self.Lactiv(a)
             a = self.alpha[t,0] * a
+            a = F.dropout2d(a, 0.1, inplace=True)
             for i, x in enumerate(hist):
                 if x is not None:
                     a = a + self.alpha[t,i+1] * x
 
             a = self.Lnormalization[t](a)
-            a = F.dropout2d(a, 0.1)
-            
+
             for i in range(1, self.n_history-1):
                 hist[i] = hist[i+1]
             hist[self.n_history-1] = a
