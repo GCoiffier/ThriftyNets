@@ -15,7 +15,7 @@ import torch.nn.functional as F
 
 import math
 
-from .modules import MBConv
+from .modules import *
 from .activations import get_activ
 
 ## ----------------- 1/ Resnets -------------------------------    
@@ -102,7 +102,7 @@ def resnet152():
 
 ## ------ 2/ Factorized Resnet ---------------------
 
-class BasicBlock(nn.Module):
+class BasicBlockF(nn.Module):
     """
     Basic Block for resnet 18 and resnet 34
     """
@@ -156,25 +156,25 @@ class FactorizedResNet(nn.Module):
         # resnet18 : [2, 2, 2, 2]
         # resnet34 : [3, 4, 6, 3]
         self.blocks = nn.ModuleList([
-            BasicBlock(64, 64, 2),
-            BasicBlock(64, 64, 1),
-            BasicBlock(64, 64, 1),
+            BasicBlockF(64, 64, 2),
+            BasicBlockF(64, 64, 1),
+            BasicBlockF(64, 64, 1),
 
-            BasicBlock(64, 128, 2),
-            BasicBlock(128, 128, 1),
-            BasicBlock(128, 128, 1),
-            BasicBlock(128, 128, 1),
+            BasicBlockF(64, 128, 2),
+            BasicBlockF(128, 128, 1),
+            BasicBlockF(128, 128, 1),
+            BasicBlockF(128, 128, 1),
 
-            BasicBlock(128, 256, 2),
-            BasicBlock(256, 256, 1),
-            BasicBlock(256, 256, 1),
-            BasicBlock(256, 256, 1),
-            BasicBlock(256, 256, 1),
-            BasicBlock(256, 256, 1),
+            BasicBlockF(128, 256, 2),
+            BasicBlockF(256, 256, 1),
+            BasicBlockF(256, 256, 1),
+            BasicBlockF(256, 256, 1),
+            BasicBlockF(256, 256, 1),
+            BasicBlockF(256, 256, 1),
 
-            BasicBlock(256, 256, 2),
-            BasicBlock(256, 256, 1),
-            BasicBlock(256, 256, 1)
+            BasicBlockF(256, 256, 2),
+            BasicBlockF(256, 256, 1),
+            BasicBlockF(256, 256, 1)
         ])
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(256, num_classes)

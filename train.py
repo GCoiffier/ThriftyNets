@@ -48,7 +48,8 @@ if __name__ == '__main__':
 
     #model = get_model(args, metadata)
     #model = UnfactorThriftyNet(metadata["input_shape"], metadata["n_classes"], args.filters, args.iter, args.pool, args.activ, args.conv_mode, args.bias)
-    model = factorized_resnet18(metadata["n_classes"])
+    #model = factorized_resnet18(metadata["n_classes"])
+    model = resnet18()
 
     if args.n_params is not None and args.model not in ["block_thrifty", "blockthrifty"]:
         n = model.n_parameters
@@ -173,6 +174,11 @@ if __name__ == '__main__':
             scheduler.step(logger["test_loss"])
         lr = optimizer.state_dict()["param_groups"][0]["lr"]
         print()
+
+        if epoch==150:
+            optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
+            scheduler = ReduceLROnPlateau(optimizer, factor=10, patience=args.patience, min_lr=args.min_lr)
+
 
         if args.checkpoint_freq != 0 and epoch%args.checkpoint_freq == 0:
             name = args.name+ "_e" + str(epoch) + "_acc{:d}.model".format(int(10000*logger["test_acc(top1)"]))
