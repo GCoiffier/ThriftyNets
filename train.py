@@ -179,7 +179,7 @@ if __name__ == '__main__':
 
         if epoch==150:
             optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
-            scheduler = ReduceLROnPlateau(optimizer, factor=10, patience=args.patience, min_lr=args.min_lr)
+            scheduler = ReduceLROnPlateau(optimizer, factor=0.1, patience=args.patience, min_lr=args.min_lr)
 
 
         if args.checkpoint_freq != 0 and epoch%args.checkpoint_freq == 0:
