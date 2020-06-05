@@ -80,7 +80,6 @@ class ThriftyBlock(nn.Module):
             a = self.Lconv(hist[-1])
             a = self.Lactiv(a)
             a = self.alpha[t,0] * a
-            a = F.dropout2d(a, 0.1, inplace=True)
             for i, x in enumerate(hist):
                 if x is not None:
                     a = a + self.alpha[t,i+1] * x
