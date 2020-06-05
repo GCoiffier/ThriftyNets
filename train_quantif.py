@@ -282,8 +282,8 @@ if __name__ == '__main__':
         print()
 
         if args.checkpoint_freq != 0 and epoch%args.checkpoint_freq == 0:
-            name = args.name+ "_e" + str(epoch) + "_acc{:d}.model".format(int(10000*logger["test_acc"]))
-            model.save(name)
+            name = args.name+ "_e" + str(epoch) + "_acc{:d}.model".format(int(10000*logger["test_acc(top1)"]))
+            torch.save(model.state_dict(), name)
 
         logger.log()
 

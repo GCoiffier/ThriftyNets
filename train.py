@@ -66,8 +66,10 @@ if __name__ == '__main__':
 
     n_parameters = sum(p.numel() for p in model.parameters())
     print("N parameters : ", n_parameters)
-    # print("N filters : ", model.n_filters)
-    # print("Pool strategy : ", model.pool_strategy)
+    if (hasattr(model, "n_filters")):
+        print("N filters : ", model.n_filters)
+    if (hasattr(model, "pool_stategy")):
+        print("Pool strategy : ", model.pool_strategy)
 
     if args.resume is not None:
         model.load_state_dict(torch.load(args.resume)["state_dict"])
