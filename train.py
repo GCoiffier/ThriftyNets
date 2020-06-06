@@ -177,11 +177,6 @@ if __name__ == '__main__':
         lr = optimizer.state_dict()["param_groups"][0]["lr"]
         print()
 
-        if epoch==150:
-            optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
-            scheduler = ReduceLROnPlateau(optimizer, factor=0.1, patience=args.patience, min_lr=args.min_lr)
-
-
         if args.checkpoint_freq != 0 and epoch%args.checkpoint_freq == 0:
             name = args.name+ "_e" + str(epoch) + "_acc{:d}.model".format(int(10000*logger["test_acc(top1)"]))
             torch.save(model.state_dict(), name)
