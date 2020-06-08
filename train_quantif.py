@@ -59,7 +59,7 @@ def quantifier(w, n_bit):
     v = torch.zeros(a)
     v = v + pow(2, n_bit-1 + maxi)
     v = v.float() #FloatNoGradient.apply(v)
-    v = v.cuda()	
+    #v = v.cuda()	
     w = w*v
     w = IntNoGradient.apply(w)
     #w = FloatNoGradient.apply(w)
@@ -197,7 +197,8 @@ if __name__ == '__main__':
 
     print("N parameters : ", model.n_parameters)
     if args.resume is not None:
-        model.load_state_dict(torch.load(args.resume)["state_dict"])
+        model_data = torch.load(args.resume, map_location=torch.device("cpu"))
+        model.load_state_dict(model_data)
 
     model = model.to(device)
     scheduler = None
