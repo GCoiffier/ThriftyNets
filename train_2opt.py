@@ -166,13 +166,12 @@ if __name__ == '__main__':
         lr = optimizer1.state_dict()["param_groups"][0]["lr"]
         print()
 
-        prune_zeros(model)
         logger.update({"params" : model.n_parameters})
         model = model.to(device)
         optim.param_groups = model.parameters()
 
         if args.checkpoint_freq != 0 and epoch%args.checkpoint_freq == 0:
-            name = args.name+ "_e" + str(epoch) + "_acc{:d}.model".format(int(10000*logger["test_acc(top1)"]))
+            name = args.name+ "_e" + str(epoch) + "_acc{:d}.model".format(int(10000*logger["test_acc"]))
             torch.save(model.state_dict(), name)
 
         logger.log()
