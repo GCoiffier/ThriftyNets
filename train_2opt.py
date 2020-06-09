@@ -30,7 +30,7 @@ Alphas are penalized with a loss that changes over time in order to force them t
 """
 
 def alpha_loss(x, temp=1.0):
-    return torch.exp(-temp*x) + torch.exp(temp*(x-1)) + F.relu(temp*temp*x*(1-x))
+    return torch.sum(torch.exp(-temp*x) + torch.exp(temp*(x-1)) + F.relu(temp*temp*x*(1-x)))
 
 if __name__ == '__main__':
 
