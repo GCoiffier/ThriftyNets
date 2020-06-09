@@ -123,14 +123,7 @@ if __name__ == '__main__':
             loss = F.cross_entropy(output, target)
             avg_loss += loss.item()
 
-            alLoss = alpha_loss(model.Lblock.alphas, 10.0)
-
-            n_filters = model.Lblock.n_filters
-            if isinstance(model.Lblock.Lconv, MBConv):
-                w = model.Lblock.Lconv.conv1.weight
-                for i in range(n_filters):
-                    loss += args.lmbd * w[i,...].norm()
-
+            alLoss = alpha_loss(model.Lblock.alpha, 10.0)
             loss.backward()
             alLoss.backward()
 
