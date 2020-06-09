@@ -96,6 +96,7 @@ if __name__ == '__main__':
 
     print("-"*80 + "\n")
     test_loss = 0
+    temperature = 1
     test_acc = torch.zeros(len(topk))
     lr = optimizer1.state_dict()["param_groups"][0]["lr"]
     for epoch in range(1, args.epochs + 1):
@@ -123,7 +124,7 @@ if __name__ == '__main__':
             loss = F.cross_entropy(output, target)
             avg_loss += loss.item()
 
-            alLoss = alpha_loss(model.Lblock.alpha, 10.0)
+            alLoss = alpha_loss(model.Lblock.alpha, temperature)
             loss.backward()
             alLoss.backward()
 
@@ -163,6 +164,8 @@ if __name__ == '__main__':
         
         if scheduler is not None:
             scheduler.step(logger["test_loss"])
+        if epoch%20==0:
+            temperature*=5
         lr = optimizer1.state_dict()["param_groups"][0]["lr"]
         print()
 
