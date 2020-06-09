@@ -124,7 +124,7 @@ if __name__ == '__main__':
             loss = F.cross_entropy(output, target)
             avg_loss += loss.item()
 
-            alLoss = alpha_loss(model.Lblock.alpha, temperature)
+            alLoss = 1e-2*alpha_loss(model.Lblock.alpha, temperature)
             loss.backward()
             alLoss.backward()
 
@@ -164,8 +164,8 @@ if __name__ == '__main__':
         
         if scheduler is not None:
             scheduler.step(logger["test_loss"])
-        if epoch%20==0:
-            temperature*=5
+        if epoch%50==0 :
+            temperature = min(5*temperature, 100)
         lr = optimizer1.state_dict()["param_groups"][0]["lr"]
         print()
 
