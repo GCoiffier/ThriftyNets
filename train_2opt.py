@@ -31,6 +31,7 @@ Alphas are penalized with a loss that changes over time in order to force them t
 
 def alpha_loss(x, temp=1.0):
     return torch.sum(torch.exp(-temp*x) + torch.exp(temp*(x-1)) + F.relu(temp*temp*x*(1-x)))
+    # torch.sum(temp*x*x*(1-x)*(1-x))
 
 if __name__ == '__main__':
 
@@ -80,7 +81,7 @@ if __name__ == '__main__':
     elif args.optimizer=="adam":
         optimizer1 = optim.Adam([x for x in model.parameters()][1:], lr=args.learning_rate, weight_decay=args.weight_decay)
 
-    optimizer2 = optim.Adam([x for x in model.parameters()][:1], lr=1e-4)
+    optimizer2 = optim.Adam([x for x in model.parameters()][:1], lr=1e-3)
 
     try:
         os.mkdir("logs")
@@ -123,10 +124,10 @@ if __name__ == '__main__':
             
             loss = F.cross_entropy(output, target)
             avg_loss += loss.item()
-
-            alLoss = 1e-1*alpha_loss(model.Lblock.alpha, temperature)
             loss.backward()
-            alLoss.backward()
+
+            #alLoss = alpha_loss(model.Lblock.alpha, temperature)
+            #alLoss.backward()
 
             optimizer1.step()
             optimizer2.step()
