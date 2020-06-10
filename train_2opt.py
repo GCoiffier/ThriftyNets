@@ -36,7 +36,8 @@ def alpha_loss(x, temp=1.0):
 if __name__ == '__main__':
 
     parser = utils.args()
-    parser.add_argument("-lmbd", "--lmbd", type=float, default=1e-4)
+    parser.add_argument("-alpha", "--alpha", type=float, default=0.02)
+    parser.add_argument("-st", "--starting-temp", type=float, default=1.)
     args = parser.parse_args()
     print(args)
     
@@ -97,7 +98,7 @@ if __name__ == '__main__':
 
     print("-"*80 + "\n")
     test_loss = 0
-    temperature = 1
+    temperature = args.starting_temp
     test_acc = torch.zeros(len(topk))
     lr = optimizer1.state_dict()["param_groups"][0]["lr"]
     for epoch in range(1, args.epochs + 1):
@@ -126,8 +127,8 @@ if __name__ == '__main__':
             avg_loss += loss.item()
             loss.backward()
 
-            #alLoss = alpha_loss(model.Lblock.alpha, temperature)
-            #alLoss.backward()
+            alLoss = alpha_loss(model.Lblock.alpha, temperature)
+            alLoss.backward()
 
             optimizer1.step()
             optimizer2.step()
@@ -165,8 +166,9 @@ if __name__ == '__main__':
         
         if scheduler is not None:
             scheduler.step(logger["test_loss"])
-        if epoch%50==0 :
-            temperature = min(5*temperature, 100)
+        
+        temperature*= (1 + args.alpha)
+
         lr = optimizer1.state_dict()["param_groups"][0]["lr"]
         print()
 
