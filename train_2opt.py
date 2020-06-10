@@ -124,7 +124,7 @@ if __name__ == '__main__':
             loss = F.cross_entropy(output, target)
             avg_loss += loss.item()
 
-            alLoss = 1e-2*alpha_loss(model.Lblock.alpha, temperature)
+            alLoss = 1e-1*alpha_loss(model.Lblock.alpha, temperature)
             loss.backward()
             alLoss.backward()
 
