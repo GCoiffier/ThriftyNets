@@ -76,14 +76,15 @@ if __name__ == '__main__':
         model.load_state_dict(torch.load(args.resume)["state_dict"])
 
     model = model.to(device)
-    scheduler = None
+    scheduler1 = None
     if args.optimizer=="sgd":
         optimizer1 = optim.SGD([x for x in model.parameters()][1:], lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
-        scheduler = ReduceLROnPlateau(optimizer1, factor=args.gamma, patience=args.patience, min_lr=args.min_lr)
+        scheduler1 = ReduceLROnPlateau(optimizer1, factor=args.gamma, patience=args.patience, min_lr=args.min_lr)
     elif args.optimizer=="adam":
         optimizer1 = optim.Adam([x for x in model.parameters()][1:], lr=args.learning_rate, weight_decay=args.weight_decay)
 
-    optimizer2 = optim.Adam([x for x in model.parameters()][:1], lr=1e-3)
+    optimizer2 = optim.SGD([x for x in model.parameters()][:1], lr=1e-3, momentum=args.momentum)
+    scheduler2 = ReduceLROnPlateau(optimizer2, factor=args.gamma, patience=args.patience, min_lr=args.min_lr/100)
 
     try:
         os.mkdir("logs")
@@ -122,6 +123,7 @@ if __name__ == '__main__':
 
             data, target = data.to(device), target.to(device)
             optimizer1.zero_grad()
+            optimizer2.zero_grad()
             output = model(data)
             
             loss = F.cross_entropy(output, target)
@@ -129,13 +131,10 @@ if __name__ == '__main__':
             loss.backward()
 
             alLoss += alpha_loss(model.Lblock.alpha, temperature)
-            optimizer1.step()
+            alLoss.backward()
             
-            if batch_idx%100==0:
-                alLoss.backward()
-                optimizer2.step()
-                optimizer2.zero_grad()
-                alLoss = 0
+            optimizer1.step()
+            optimizer2.step()
 
             accuracies += utils.accuracy(output, target, topk=topk)
             acc_score = accuracies / (1+batch_idx)
@@ -168,8 +167,9 @@ if __name__ == '__main__':
         for i,k in enumerate(topk):
             logger.update({"test_acc(top{})".format(k) : test_acc[i]})
         
-        if scheduler is not None:
-            scheduler.step(logger["test_loss"])
+        if scheduler1 is not None:
+            scheduler1.step(logger["test_loss"])
+            scheduler2.step(logger["test_loss"])
         
         temperature*= (1 + args.alpha)
 
