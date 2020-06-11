@@ -54,12 +54,12 @@ def maxWeight(weight):
 
 def quantifier(w, n_bit):
     maxi=maxWeight(w)
-    #w = weight.clone().cuda()
+    w = weight.clone().cuda()
     a = w.shape
     v = torch.zeros(a)
     v = v + pow(2, n_bit-1 + maxi)
     v = v.float() #FloatNoGradient.apply(v)
-    #v = v.cuda()	
+    v = v.cuda()	
     w = w*v
     w = IntNoGradient.apply(w)
     #w = FloatNoGradient.apply(w)

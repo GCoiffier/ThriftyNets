@@ -130,7 +130,7 @@ if __name__ == '__main__':
             alLoss = alpha_loss(model.Lblock.alpha, temperature)
             alLoss.backward()
 
-            optimizer1.step()
+            # optimizer1.step()
             optimizer2.step()
 
             accuracies += utils.accuracy(output, target, topk=topk)
