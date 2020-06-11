@@ -28,7 +28,6 @@ Training procedure using two optimizers :
 
 Alphas are penalized with a loss that changes over time in order to force them to {0; 1} at the end
 """
-
 def alpha_loss(x, temp=1.0):
     loss = x*x*(1-x)*(1-x)
     loss = torch.sum(temp*loss)
@@ -37,8 +36,8 @@ def alpha_loss(x, temp=1.0):
 if __name__ == '__main__':
 
     parser = utils.args()
-    parser.add_argument("-alpha", "--alpha", type=float, default=0.02)
-    parser.add_argument("-st", "--starting-temp", type=float, default=1.)
+    parser.add_argument("-alpha", "--alpha", type=float, default = 1.2e-4)
+    parser.add_argument("-st", "--starting-temp", type=float, default = 1e-4)
     args = parser.parse_args()
     print(args)
     
@@ -76,15 +75,12 @@ if __name__ == '__main__':
         model.load_state_dict(torch.load(args.resume)["state_dict"])
 
     model = model.to(device)
-    scheduler1 = None
+    scheduler = None
     if args.optimizer=="sgd":
-        optimizer1 = optim.SGD([x for x in model.parameters()][1:], lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
-        scheduler1 = ReduceLROnPlateau(optimizer1, factor=args.gamma, patience=args.patience, min_lr=args.min_lr)
+        optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
+        scheduler = ReduceLROnPlateau(optimizer, factor=args.gamma, patience=args.patience, min_lr=args.min_lr)
     elif args.optimizer=="adam":
-        optimizer1 = optim.Adam([x for x in model.parameters()][1:], lr=args.learning_rate, weight_decay=args.weight_decay)
-
-    optimizer2 = optim.SGD([x for x in model.parameters()][:1], lr=1e-3, momentum=args.momentum)
-    scheduler2 = ReduceLROnPlateau(optimizer2, factor=args.gamma, patience=args.patience, min_lr=args.min_lr/100)
+        optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
 
     try:
         os.mkdir("logs")
@@ -102,7 +98,7 @@ if __name__ == '__main__':
     test_loss = 0
     temperature = args.starting_temp
     test_acc = torch.zeros(len(topk))
-    lr = optimizer1.state_dict()["param_groups"][0]["lr"]
+    lr = optimizer.state_dict()["param_groups"][0]["lr"]
     for epoch in range(1, args.epochs + 1):
 
         t0 = time.time()
@@ -112,7 +108,7 @@ if __name__ == '__main__':
         model.train()
         accuracies = torch.zeros(len(topk))
         loss = 0
-        alLoss =0
+        alLoss = 0
         avg_loss = 0
         for batch_idx, (data, target) in tqdm(enumerate(train_loader), 
                                               total=len(train_loader),
@@ -122,8 +118,7 @@ if __name__ == '__main__':
                                               unit="batch"):
 
             data, target = data.to(device), target.to(device)
-            optimizer1.zero_grad()
-            optimizer2.zero_grad()
+            optimizer.zero_grad()
             output = model(data)
             
             loss = F.cross_entropy(output, target)
@@ -131,10 +126,10 @@ if __name__ == '__main__':
             loss.backward()
 
             alLoss += alpha_loss(model.Lblock.alpha, temperature)
+            temperature *= (1 + args.alpha)
             alLoss.backward()
             
-            optimizer1.step()
-            optimizer2.step()
+            optimizer.step()
 
             accuracies += utils.accuracy(output, target, topk=topk)
             acc_score = accuracies / (1+batch_idx)
@@ -167,13 +162,10 @@ if __name__ == '__main__':
         for i,k in enumerate(topk):
             logger.update({"test_acc(top{})".format(k) : test_acc[i]})
         
-        if scheduler1 is not None:
-            scheduler1.step(logger["test_loss"])
-            scheduler2.step(logger["test_loss"])
+        if scheduler is not None:
+            scheduler.step(logger["test_loss"])
         
-        temperature*= (1 + args.alpha)
-
-        lr = optimizer1.state_dict()["param_groups"][0]["lr"]
+        lr = optimizer.state_dict()["param_groups"][0]["lr"]
         print()
 
         logger.update({"params" : model.n_parameters})
