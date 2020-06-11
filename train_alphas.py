@@ -108,7 +108,6 @@ if __name__ == '__main__':
         model.train()
         accuracies = torch.zeros(len(topk))
         loss = 0
-        alLoss = 0
         avg_loss = 0
         for batch_idx, (data, target) in tqdm(enumerate(train_loader), 
                                               total=len(train_loader),
@@ -125,7 +124,7 @@ if __name__ == '__main__':
             avg_loss += loss.item()
             loss.backward()
 
-            alLoss += alpha_loss(model.Lblock.alpha, temperature)
+            alLoss = alpha_loss(model.Lblock.alpha, temperature)
             temperature *= (1 + args.alpha)
             alLoss.backward()
             
