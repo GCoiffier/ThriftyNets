@@ -31,8 +31,7 @@ Alphas are penalized with a loss that changes over time in order to force them t
 
 def alpha_loss(x, temp=1.0):
     loss = x*x*(1-x)*(1-x)
-    with torch.no_grad():
-        loss = torch.sum(temp*loss)
+    loss = torch.sum(temp*loss)
     return loss
 
 if __name__ == '__main__':
