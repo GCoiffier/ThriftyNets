@@ -128,11 +128,10 @@ if __name__ == '__main__':
             loss.backward()
 
             alLoss += alpha_loss(model.Lblock.alpha, temperature)
-            alLoss.backward()
-
             optimizer1.step()
             
             if batch_idx%100==0:
+                alLoss.backward()
                 optimizer2.step()
                 optimizer2.zero_grad()
                 alLoss = 0
