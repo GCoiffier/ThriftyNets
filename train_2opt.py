@@ -110,6 +110,7 @@ if __name__ == '__main__':
         model.train()
         accuracies = torch.zeros(len(topk))
         loss = 0
+        alLoss =0
         avg_loss = 0
         for batch_idx, (data, target) in tqdm(enumerate(train_loader), 
                                               total=len(train_loader),
@@ -126,7 +127,7 @@ if __name__ == '__main__':
             avg_loss += loss.item()
             loss.backward()
 
-            alLoss = alpha_loss(model.Lblock.alpha, temperature)
+            alLoss += alpha_loss(model.Lblock.alpha, temperature)
             alLoss.backward()
 
             optimizer1.step()
@@ -134,6 +135,7 @@ if __name__ == '__main__':
             if batch_idx%100==0:
                 optimizer2.step()
                 optimizer2.zero_grad()
+                alLoss = 0
 
             accuracies += utils.accuracy(output, target, topk=topk)
             acc_score = accuracies / (1+batch_idx)
