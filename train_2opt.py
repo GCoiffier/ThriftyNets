@@ -120,7 +120,6 @@ if __name__ == '__main__':
 
             data, target = data.to(device), target.to(device)
             optimizer1.zero_grad()
-            optimizer2.zero_grad()
             output = model(data)
             
             loss = F.cross_entropy(output, target)
@@ -130,8 +129,11 @@ if __name__ == '__main__':
             alLoss = alpha_loss(model.Lblock.alpha, temperature)
             alLoss.backward()
 
-            # optimizer1.step()
-            optimizer2.step()
+            optimizer1.step()
+            
+            if batch_idx%100==0:
+                optimizer2.step()
+                optimizer2.zero_grad()
 
             accuracies += utils.accuracy(output, target, topk=topk)
             acc_score = accuracies / (1+batch_idx)
