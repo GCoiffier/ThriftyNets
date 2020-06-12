@@ -166,7 +166,7 @@ if __name__ == '__main__':
         
         ## TESTING WITH BINARIZED SHORTCUTS
         saved_alpha = model.Lblock.alpha
-        model.Lblock.alpha = model.Lblock.alpha > 0.5
+        model.Lblock.alpha = nn.Parameter(torch.FloatTensor(model.Lblock.alpha > 0.5))
         test_loss_bin = 0
         test_acc_bin = torch.zeros(len(topk))
         model.eval()
