@@ -140,6 +140,7 @@ if __name__ == '__main__':
             for i,k in enumerate(topk):
                 tqdm_log += "Train_acc(top{}): {:.3f}, Test_acc(top{}): {:.3f},  Test_acc_BIN(top{}) : {:.3f}".format(k, acc_score[i], k, test_acc[i], k, test_acc_bin[i])
             tqdm.write(tqdm_log)
+            break
 
         logger.update({"epoch_time" : (time.time() - t0)/60 })
         logger.update({"train_loss" : loss.item()})
@@ -166,7 +167,7 @@ if __name__ == '__main__':
         
         ## TESTING WITH BINARIZED SHORTCUTS
         saved_alpha = model.Lblock.alpha.data.clone()
-        model.Lblock.alpha.data = torch.FloatTensor(model.Lblock.alpha.data > 0.5)
+        model.Lblock.alpha.data = (model.Lblock.alpha.data > 0.5).float()
         test_loss_bin = 0
         test_acc_bin = torch.zeros(len(topk))
         model.eval()
@@ -182,7 +183,7 @@ if __name__ == '__main__':
         logger.update({"test_loss_bin" : test_loss})
         for i,k in enumerate(topk):
             logger.update({"test_acc_bin(top{})".format(k) : test_acc[i]})
-        model.Lblock.alpha.data = saved_alpha
+        model.Lblock.alpha.data = saved_alpha.to(device)
 
         if scheduler is not None:
             scheduler.step(logger["test_loss"])
