@@ -96,8 +96,11 @@ if __name__ == '__main__':
 
     print("-"*80 + "\n")
     test_loss = 0
+    test_loss_bin = 0
     temperature = args.starting_temp
     test_acc = torch.zeros(len(topk))
+    test_acc_bin = torch.zeros(len(topk))
+
     lr = optimizer.state_dict()["param_groups"][0]["lr"]
     for epoch in range(1, args.epochs + 1):
 
@@ -133,9 +136,9 @@ if __name__ == '__main__':
             accuracies += utils.accuracy(output, target, topk=topk)
             acc_score = accuracies / (1+batch_idx)
 
-            tqdm_log = prefix+"Epoch {}/{}, LR: {:.1E}, Train_Loss: {:.3f}, Test_loss: {:.3f}, ".format(epoch, args.epochs, lr, avg_loss/(1+batch_idx), test_loss)
+            tqdm_log = prefix+"Epoch {}/{}, LR: {:.1E}, Train_Loss: {:.3f}, Test_loss: {:.3f}, Test_loss_BIN: {:.3f} ".format(epoch, args.epochs, lr, avg_loss/(1+batch_idx), test_loss, test_loss_bin)
             for i,k in enumerate(topk):
-                tqdm_log += "Train_acc(top{}): {:.3f}, Test_acc(top{}): {:.3f}, ".format(k, acc_score[i], k, test_acc[i])
+                tqdm_log += "Train_acc(top{}): {:.3f}, Test_acc(top{}): {:.3f},  Test_acc_BIN(top{}) : {:.3f}".format(k, acc_score[i], k, test_acc[i], k, test_acc_bin[i])
             tqdm.write(tqdm_log)
 
         logger.update({"epoch_time" : (time.time() - t0)/60 })
@@ -161,6 +164,26 @@ if __name__ == '__main__':
         for i,k in enumerate(topk):
             logger.update({"test_acc(top{})".format(k) : test_acc[i]})
         
+        ## TESTING WITH BINARIZED SHORTCUTS
+        saved_alpha = model.Lblock.alpha
+        model.Lblock.alpha = model.Lblock.alpha > 0.5
+        test_loss_bin = 0
+        test_acc_bin = torch.zeros(len(topk))
+        model.eval()
+        with torch.no_grad():
+            for data, target in test_loader:
+                data, target = data.to(device), target.to(device)
+                output = model(data)
+                test_loss_bin += F.cross_entropy(output, target, reduction='sum').item()  # sum up batch loss
+                test_acc_bin += utils.accuracy(output, target, topk=topk)
+
+        test_loss_bin /= len(test_loader.dataset)
+        test_acc_bin /= len(test_loader)
+        logger.update({"test_loss_bin" : test_loss})
+        for i,k in enumerate(topk):
+            logger.update({"test_acc_bin(top{})".format(k) : test_acc[i]})
+        model.Lblock.alpha = saved_alpha
+
         if scheduler is not None:
             scheduler.step(logger["test_loss"])
         

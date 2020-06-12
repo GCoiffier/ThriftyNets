@@ -56,7 +56,7 @@ class ThriftyBlock(nn.Module):
             self.Lconv = MBConv(n_filters, n_filters//4, bias=self.bias)
         self.activ = get_activ(activ)
         
-        self.alpha = torch.zeros((n_iter, n_history))+0.5
+        self.alpha = torch.zeros((n_iter, n_history)) + 0.7
         #for t in range(n_iter):
         #    self.alpha[t,0] = 0.1
         #    self.alpha[t,1] = 0.9
@@ -83,7 +83,6 @@ class ThriftyBlock(nn.Module):
             for i, x in enumerate(hist):
                 if x is not None:
                     a = a + self.alpha[t,i] * x
-
             a = self.Lnormalization[t](a)
 
             for i in range(1, self.n_history-1):
