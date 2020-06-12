@@ -165,8 +165,8 @@ if __name__ == '__main__':
             logger.update({"test_acc(top{})".format(k) : test_acc[i]})
         
         ## TESTING WITH BINARIZED SHORTCUTS
-        saved_alpha = model.Lblock.alpha.weight
-        model.Lblock.alpha.weight = torch.FloatTensor(model.Lblock.alpha > 0.5)
+        saved_alpha = model.Lblock.alpha.data.clone()
+        model.Lblock.alpha.data = torch.FloatTensor(model.Lblock.alpha.data > 0.5)
         test_loss_bin = 0
         test_acc_bin = torch.zeros(len(topk))
         model.eval()
@@ -182,7 +182,7 @@ if __name__ == '__main__':
         logger.update({"test_loss_bin" : test_loss})
         for i,k in enumerate(topk):
             logger.update({"test_acc_bin(top{})".format(k) : test_acc[i]})
-        model.Lblock.alpha.weight = saved_alpha
+        model.Lblock.alpha.data = saved_alpha
 
         if scheduler is not None:
             scheduler.step(logger["test_loss"])
