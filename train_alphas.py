@@ -166,7 +166,7 @@ if __name__ == '__main__':
         
         ## TESTING WITH BINARIZED SHORTCUTS
         saved_alpha = model.Lblock.alpha.data.clone()
-        model.Lblock.alpha.data = (model.Lblock.alpha.data > 0.5).float().to(device)
+        model.Lblock.alpha.data = (model.Lblock.alpha.data > 1e-4).float().to(device)
         test_loss_bin = 0
         test_acc_bin = torch.zeros(len(topk))
         model.eval()
