@@ -180,7 +180,7 @@ if __name__ == '__main__':
     # End of first training phase
 
     else: # arg.resume is not None
-        model.load_state_dict(torch.load(args.resume)["state_dict"])
+        model.load_state_dict(torch.load(args.resume))
 
     print("-"*80 + "\n")
     print("\nBINARIZATION\n\n")
