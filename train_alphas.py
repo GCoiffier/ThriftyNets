@@ -182,13 +182,13 @@ if __name__ == '__main__':
     else: # arg.resume is not None
         model.load_state_dict(torch.load(args.resume))
 
-    print("-"*80 + "\n")
-    print("\nBINARIZATION\n\n")
+    print("-"*80)
+    print("BINARIZATION\n")
     with open("logs/{}.log".format(args.name), "a") as f:
         f.write("\n*******\n")
         f.write("\nShortcut Binarization\n")
         f.write("\n*******\n")
-    model.Lblock.alpha.data = (model.Lblock.alpha.data > 1e-4).float().to(device)
+    model.Lblock.alpha.data = (model.Lblock.alpha.data > 1e-3).float().to(device)
     print(model.Lblock.alpha)
     model.Lblock.alpha.requires_grad = False
 
@@ -238,8 +238,6 @@ if __name__ == '__main__':
         for i,k in enumerate(topk):
             logger.update({"train_acc(top{})".format(k) : acc_score[i]})
         
-        print(model.Lblock.alpha)
-
         ## TESTING
         test_loss = 0
         test_acc = torch.zeros(len(topk))
