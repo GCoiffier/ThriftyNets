@@ -36,8 +36,8 @@ def alpha_loss(x, temp=1.0):
 if __name__ == '__main__':
 
     parser = utils.args()
-    parser.add_argument("-alpha", "--alpha", type=float, default = 1e-1)
-    parser.add_argument("-st", "--starting-temp", type=float, default = 1e-4)
+    parser.add_argument("-alpha", "--alpha", type=float, default = 1e-5)
+    parser.add_argument("-st", "--starting-temp", type=float, default = 3e-4)
     args = parser.parse_args()
     print(args)
     
