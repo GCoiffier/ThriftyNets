@@ -188,7 +188,7 @@ if __name__ == '__main__':
         f.write("\n*******\n")
         f.write("\nShortcut Binarization\n")
         f.write("\n*******\n")
-    model.Lblock.alpha.data = (model.Lblock.alpha.data > 1e-2).float().to(device)
+    model.Lblock.alpha.data = (model.Lblock.alpha.data > 0.2).float().to(device)
     print(model.Lblock.alpha)
     model.Lblock.alpha.requires_grad = False
 
