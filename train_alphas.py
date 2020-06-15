@@ -73,6 +73,12 @@ if __name__ == '__main__':
 
     model = model.to(device)
     
+    try:
+        os.mkdir("logs")
+    except:
+        pass
+    logger = utils.Logger("logs/{}.log".format(args.name))
+
     if args.resume is None:
         # First phase of training
         scheduler = None
@@ -81,12 +87,6 @@ if __name__ == '__main__':
             scheduler = ReduceLROnPlateau(optimizer, factor=args.gamma, patience=args.patience, min_lr=args.min_lr)
         elif args.optimizer=="adam":
             optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
-
-        try:
-            os.mkdir("logs")
-        except:
-            pass
-        logger = utils.Logger("logs/{}.log".format(args.name))
 
         with open("logs/{}.log".format(args.name), "a") as f:
             f.write(str(args))
