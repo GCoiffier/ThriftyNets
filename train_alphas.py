@@ -36,7 +36,7 @@ def alpha_loss(x, temp=1.0):
 if __name__ == '__main__':
 
     parser = utils.args()
-    parser.add_argument("-alpha", "--alpha", type=float, default = 1.2e-4)
+    parser.add_argument("-alpha", "--alpha", type=float, default = 1e-1)
     parser.add_argument("-st", "--starting-temp", type=float, default = 1e-4)
     args = parser.parse_args()
     print(args)
@@ -96,13 +96,11 @@ if __name__ == '__main__':
 
     print("-"*80 + "\n")
     test_loss = 0
-    test_loss_bin = 0
     temperature = args.starting_temp
     test_acc = torch.zeros(len(topk))
-    test_acc_bin = torch.zeros(len(topk))
 
     lr = optimizer.state_dict()["param_groups"][0]["lr"]
-    for epoch in range(1, args.epochs + 1):
+    for epoch in range(1, 3*(args.epochs + 1)//4):
 
         t0 = time.time()
         logger.update({"Epoch" :  epoch, "lr" : lr})
@@ -164,26 +162,6 @@ if __name__ == '__main__':
         for i,k in enumerate(topk):
             logger.update({"test_acc(top{})".format(k) : test_acc[i]})
         
-        ## TESTING WITH BINARIZED SHORTCUTS
-        saved_alpha = model.Lblock.alpha.data.clone()
-        model.Lblock.alpha.data = (model.Lblock.alpha.data > 1e-4).float().to(device)
-        test_loss_bin = 0
-        test_acc_bin = torch.zeros(len(topk))
-        model.eval()
-        with torch.no_grad():
-            for data, target in test_loader:
-                data, target = data.to(device), target.to(device)
-                output = model(data)
-                test_loss_bin += F.cross_entropy(output, target, reduction='sum').item()  # sum up batch loss
-                test_acc_bin += utils.accuracy(output, target, topk=topk)
-
-        test_loss_bin /= len(test_loader.dataset)
-        test_acc_bin /= len(test_loader)
-        logger.update({"test_loss_bin" : test_loss})
-        for i,k in enumerate(topk):
-            logger.update({"test_acc_bin(top{})".format(k) : test_acc[i]})
-        model.Lblock.alpha.data = saved_alpha.to(device)
-
         if scheduler is not None:
             scheduler.step(logger["test_loss"])
         
@@ -199,5 +177,105 @@ if __name__ == '__main__':
             torch.save(model.state_dict(), name)
 
         logger.log()
+    # End of first training phase
+
+    print("-"*80 + "\n")
+    print("\nBINARIZATION\n\n")
+    with open("logs/{}.log".format(args.name), "a") as f:
+        f.write("\n*******\n")
+        f.write("\nShortcut Binarization\n")
+        f.write("\n*******\n")
+    model.Lblock.alpha.data = (model.Lblock.alpha.data > 1e-2).float().to(device)
+
+    # Beginning of second training phase
+    if args.optimizer=="sgd":
+        optimizer = optim.SGD(model.parameters(), lr=args.learning_rate//10, momentum=args.momentum, weight_decay=args.weight_decay)
+        scheduler = ReduceLROnPlateau(optimizer, factor=args.gamma, patience=args.patience, min_lr=args.min_lr)
+    elif args.optimizer=="adam":
+        optimizer = optim.Adam(model.parameters(), lr=args.learning_rate//10, weight_decay=args.weight_decay)
+
+    test_loss = 0
+    temperature = args.starting_temp
+    test_acc = torch.zeros(len(topk))
+    lr = optimizer.state_dict()["param_groups"][0]["lr"]
+    for epoch in range(3*(args.epochs + 1)//4,  args.epochs + 1):
+
+        t0 = time.time()
+        logger.update({"Epoch" :  epoch, "lr" : lr})
+
+        ## TRAINING
+        model.train()
+        accuracies = torch.zeros(len(topk))
+        loss = 0
+        avg_loss = 0
+        for batch_idx, (data, target) in tqdm(enumerate(train_loader), 
+                                              total=len(train_loader),
+                                              position=1, 
+                                              leave=False, 
+                                              ncols=100,
+                                              unit="batch"):
+
+            data, target = data.to(device), target.to(device)
+            optimizer.zero_grad()
+            output = model(data)
+            
+            loss = F.cross_entropy(output, target)
+            avg_loss += loss.item()
+            loss.backward()
+
+            alLoss = alpha_loss(model.Lblock.alpha, temperature)
+            temperature *= (1 + args.alpha)
+            alLoss.backward()
+            
+            optimizer.step()
+
+            accuracies += utils.accuracy(output, target, topk=topk)
+            acc_score = accuracies / (1+batch_idx)
+
+            tqdm_log = prefix+"Epoch {}/{}, LR: {:.1E}, Train_Loss: {:.3f}, Test_loss: {:.3f}".format(epoch, args.epochs, lr, avg_loss/(1+batch_idx), test_loss)
+            for i,k in enumerate(topk):
+                tqdm_log += "Train_acc(top{}): {:.3f}, Test_acc(top{}): {:.3f}".format(k, acc_score[i], k, test_acc[i])
+            tqdm.write(tqdm_log)
+
+        logger.update({"epoch_time" : (time.time() - t0)/60 })
+        logger.update({"train_loss" : loss.item()})
+        for i,k in enumerate(topk):
+            logger.update({"train_acc(top{})".format(k) : acc_score[i]})
+
+        ## TESTING
+        test_loss = 0
+        test_acc = torch.zeros(len(topk))
+        model.eval()
+        with torch.no_grad():
+            for data, target in test_loader:
+                data, target = data.to(device), target.to(device)
+                output = model(data)
+                test_loss += F.cross_entropy(output, target, reduction='sum').item()  # sum up batch loss
+                test_acc += utils.accuracy(output, target, topk=topk)
+
+        test_loss /= len(test_loader.dataset)
+        test_acc /= len(test_loader)
+
+        logger.update({"test_loss" : test_loss})
+        for i,k in enumerate(topk):
+            logger.update({"test_acc(top{})".format(k) : test_acc[i]})
+        
+        if scheduler is not None:
+            scheduler.step(logger["test_loss"])
+        
+        lr = optimizer.state_dict()["param_groups"][0]["lr"]
+        print()
+
+        logger.update({"params" : model.n_parameters})
+        model = model.to(device)
+        optim.param_groups = model.parameters()
+
+        if args.checkpoint_freq != 0 and epoch%args.checkpoint_freq == 0:
+            name = args.name+ "_e" + str(epoch) + "_acc{:d}.model".format(int(10000*logger["test_acc(top1)"]))
+            torch.save(model.state_dict(), name)
+
+        logger.log()
+
+
 
     torch.save(model.state_dict(), args.name+".model")
