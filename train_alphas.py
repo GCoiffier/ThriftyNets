@@ -189,6 +189,7 @@ if __name__ == '__main__':
         f.write("\nShortcut Binarization\n")
         f.write("\n*******\n")
     model.Lblock.alpha.data = (model.Lblock.alpha.data > 1e-4).float().to(device)
+    print(model.Lblock.alpha)
     model.Lblock.alpha.requires_grad = False
 
     # Beginning of second training phase
@@ -236,6 +237,8 @@ if __name__ == '__main__':
         logger.update({"train_loss" : loss.item()})
         for i,k in enumerate(topk):
             logger.update({"train_acc(top{})".format(k) : acc_score[i]})
+        
+        print(model.Lblock.alpha)
 
         ## TESTING
         test_loss = 0
