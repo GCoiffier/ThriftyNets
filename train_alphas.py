@@ -100,7 +100,7 @@ if __name__ == '__main__':
     test_acc = torch.zeros(len(topk))
 
     lr = optimizer.state_dict()["param_groups"][0]["lr"]
-    for epoch in range(1, 3*(args.epochs + 1)//4):
+    for epoch in range(1, 3*(args.epochs + 1)//4+1):
 
         t0 = time.time()
         logger.update({"Epoch" :  epoch, "lr" : lr})
@@ -134,9 +134,9 @@ if __name__ == '__main__':
             accuracies += utils.accuracy(output, target, topk=topk)
             acc_score = accuracies / (1+batch_idx)
 
-            tqdm_log = prefix+"Epoch {}/{}, LR: {:.1E}, Train_Loss: {:.3f}, Test_loss: {:.3f}, Test_loss_BIN: {:.3f} ".format(epoch, args.epochs, lr, avg_loss/(1+batch_idx), test_loss, test_loss_bin)
+            tqdm_log = prefix+"Epoch {}/{}, LR: {:.1E}, Train_Loss: {:.3f}, Test_loss: {:.3f}, ".format(epoch, args.epochs, lr, avg_loss/(1+batch_idx), test_loss)
             for i,k in enumerate(topk):
-                tqdm_log += "Train_acc(top{}): {:.3f}, Test_acc(top{}): {:.3f},  Test_acc_BIN(top{}) : {:.3f}".format(k, acc_score[i], k, test_acc[i], k, test_acc_bin[i])
+                tqdm_log += "Train_acc(top{}): {:.3f}, Test_acc(top{}): {:.3f}".format(k, acc_score[i], k, test_acc[i])
             tqdm.write(tqdm_log)
 
         logger.update({"epoch_time" : (time.time() - t0)/60 })
@@ -188,17 +188,13 @@ if __name__ == '__main__':
     model.Lblock.alpha.data = (model.Lblock.alpha.data > 1e-2).float().to(device)
 
     # Beginning of second training phase
-    if args.optimizer=="sgd":
-        optimizer = optim.SGD(model.parameters(), lr=args.learning_rate//10, momentum=args.momentum, weight_decay=args.weight_decay)
-        scheduler = ReduceLROnPlateau(optimizer, factor=args.gamma, patience=args.patience, min_lr=args.min_lr)
-    elif args.optimizer=="adam":
-        optimizer = optim.Adam(model.parameters(), lr=args.learning_rate//10, weight_decay=args.weight_decay)
+    optimizer = optim.SGD([ x for x in model.parameters()][1:], lr=args.learning_rate//10, momentum=args.momentum, weight_decay=args.weight_decay)
+    scheduler = ReduceLROnPlateau(optimizer, factor=args.gamma, patience=args.patience, min_lr=args.min_lr)
 
     test_loss = 0
-    temperature = args.starting_temp
     test_acc = torch.zeros(len(topk))
     lr = optimizer.state_dict()["param_groups"][0]["lr"]
-    for epoch in range(3*(args.epochs + 1)//4,  args.epochs + 1):
+    for epoch in range(3*(args.epochs + 1)//4 + 1,  args.epochs + 1):
 
         t0 = time.time()
         logger.update({"Epoch" :  epoch, "lr" : lr})
@@ -222,11 +218,6 @@ if __name__ == '__main__':
             loss = F.cross_entropy(output, target)
             avg_loss += loss.item()
             loss.backward()
-
-            alLoss = alpha_loss(model.Lblock.alpha, temperature)
-            temperature *= (1 + args.alpha)
-            alLoss.backward()
-            
             optimizer.step()
 
             accuracies += utils.accuracy(output, target, topk=topk)
