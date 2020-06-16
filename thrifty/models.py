@@ -36,6 +36,20 @@ def get_model(args, metadata):
     else:
         raise Exception("Model type was not recognized")
 
+def get_model_exact_params(model, args, metadata):
+    n = model.n_parameters
+    if n<args.n_params:
+        while n<args.n_params:
+            args.filters += 1
+            model = get_model(args, metadata)
+            n = model.n_parameters
+    if n>args.n_params:
+        while n>args.n_params:
+            args.filters -= 1 
+            model = get_model(args,metadata)
+            n = model.n_parameters
+    return model, args
+
 class ThriftyNet(nn.Module):
     """
     Just a ResThriftyNet with history = 1

@@ -31,9 +31,6 @@ def args():
     parser.add_argument('--nesterov', default=True, type=bool, help='nesterov')
     parser.add_argument('-wd', '--weight-decay', default=5e-4, type=float, help="weight decay")
     parser.add_argument('-bs', '--batch-size', type=int, default=100, help="batch size")
-    parser.add_argument('-nmb', '--n-mini-batch', type=int, default=1, 
-                        help="will perform 'n-mini-batch' forward pass with size 'batch-size' for each \
-                             backward pass. Usefull for limited memory applications")
     parser.add_argument('-tbs', '--test-batch-size', type=int, default=100)
     parser.add_argument('-epochs', '--epochs', type=int, default=200)
 
@@ -48,8 +45,8 @@ def args():
     parser.add_argument("-topk", "--topk", type=int, default=None, nargs="+", help="Accuracy to be measured (top 1 acc, top 5 acc, ...)")
     parser.add_argument("--seed", type=int, default=random.randint(0,1000000),
                         help = "random seed to initialize.")
-    parser.add_argument("-name", "--name", type=str, default="unnamed",
-                        help="name of the experiment in the result txt file")
+    parser.add_argument("-name", "--name", type=str, default=None,
+                        help="name of the experiment in the result log file")
     parser.add_argument("-resume", "--resume", type=str, default=None)
 
     return parser
