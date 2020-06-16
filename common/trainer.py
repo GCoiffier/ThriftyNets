@@ -88,7 +88,7 @@ class Trainer:
     
 
     def train(self, Nepochs, epoch_start=1):
-        for epoch in range(epoch_start, epoch_start+Nepochs+1):
+        for epoch in range(epoch_start, epoch_start+Nepochs):
             self.metrics["epoch"] = epoch
             self._train_for_one_epoch(epoch)
             self._call_end_train_CB()

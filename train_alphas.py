@@ -93,7 +93,7 @@ if __name__ == '__main__':
         trainer1 = Trainer(device, model, dataset, optimizer, [CrossEntropy(), AlphaLoss()], scheduler, name=args.name, topk=topk, checkpointFreq=args.checkpoint_freq)
         trainer1.temperature = args.starting_temp
         trainer1.callbacks.append(AlphaCallback(args.alpha))
-        trainer1.train(1)
+        trainer1.train(args.epochs)
 
     else: # arg.resume is not None
         model.load_state_dict(torch.load(args.resume))
@@ -116,7 +116,7 @@ if __name__ == '__main__':
     torch.save(model.state_dict(), args.name+".model")
     """
 
-    print("-"*80)
+    print("\n"+"-"*80)
     print("BINARIZATION\n")
     with open("logs/{}.log".format(args.name), "a") as f:
         f.write("*******\nShortcut Binarization\n*******\n")
