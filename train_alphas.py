@@ -16,7 +16,7 @@ from common.trainer import Trainer
 from common.callback import Callback
 from common.losses import *
 
-from thrifty.models import get_model
+from thrifty.models import get_model, get_model_exact_params
 
 """
 Callback for exponentially increasing thhe temperature of the alpha loss

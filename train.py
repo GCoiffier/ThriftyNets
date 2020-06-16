@@ -16,7 +16,7 @@ from common.losses import *
 from common import utils
 from common.trainer import Trainer
 
-from thrifty.models import get_model
+from thrifty.models import get_model, get_model_exact_params
 from thrifty.sandbox import *
 
 
