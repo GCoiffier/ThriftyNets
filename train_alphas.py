@@ -38,7 +38,7 @@ if __name__ == '__main__':
         pass
 
     parser = utils.args()
-    parser.add_argument("-alpha", "--alpha", type=float, default = 1e-5)
+    parser.add_argument("-alpha", "--alpha", type=float, default = 1.5e-4)
     parser.add_argument("-st", "--starting-temp", type=float, default = 3e-4)
     args = parser.parse_args()
     print(args)
