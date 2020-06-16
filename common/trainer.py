@@ -82,7 +82,7 @@ class Trainer:
         self.metrics["test_acc"] = torch.zeros(len(self.topk))
 
         self.callbacks = [TqdmCB()]
-        if self.name!="unnamed":
+        if self.name != "unnamed":
             self.callbacks.append(CheckpointCB())
             self.callbacks.append(LoggerCB())
     
@@ -147,7 +147,7 @@ class Trainer:
                     self.metrics["test_loss"] += lossFun.call(output, target, self).sum().item()  # sum up batch loss
                 self.metrics["test_acc"] += accuracy(output, target, topk=self.topk)
 
-        self.metrics["test_loss"] /= len(self.test_data.dataset)
+        self.metrics["test_loss"] /= len(self.test_data)
         self.metrics["test_acc"] /= len(self.test_data)
 
     def _call_end_forward_CB(self):

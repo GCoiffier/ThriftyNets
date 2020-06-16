@@ -93,11 +93,12 @@ if __name__ == '__main__':
         trainer1 = Trainer(device, model, dataset, optimizer, [CrossEntropy(), AlphaLoss()], scheduler, name=args.name, topk=topk, checkpointFreq=args.checkpoint_freq)
         trainer1.temperature = args.starting_temp
         trainer1.callbacks.append(AlphaCallback(args.alpha))
-        trainer1.train(3*args.epochs//4)
+        trainer1.train(1)
 
     else: # arg.resume is not None
         model.load_state_dict(torch.load(args.resume))
 
+    """
     print("-"*80)
     print("BINARIZATION\n")
     with open("logs/{}.log".format(args.name), "a") as f:
@@ -112,4 +113,24 @@ if __name__ == '__main__':
 
     trainer2 = Trainer(device, model, dataset, optimizer, CrossEntropy(), scheduler, name=args.name, topk=topk, checkpointFreq=args.checkpoint_freq)
     trainer2.train(args.epochs//4, 3*args.epochs//4)
+    torch.save(model.state_dict(), args.name+".model")
+    """
+
+    print("-"*80)
+    print("BINARIZATION\n")
+    with open("logs/{}.log".format(args.name), "a") as f:
+        f.write("*******\nShortcut Binarization\n*******\n")
+    alpha = (model.Lblock.alpha.data > 0.2).float().to(device)
+    
+    # Reinitialize model
+    model = get_model(args, metadata)
+    model.Lblock.alpha.data = alpha
+    model.Lblock.alpha.requires_grad = False
+
+    # Beginning of second training phase
+    optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
+    scheduler = ReduceLROnPlateau(optimizer, factor=args.gamma, patience=args.patience, min_lr=args.min_lr)
+
+    trainer2 = Trainer(device, model, dataset, optimizer, CrossEntropy(), scheduler, name=args.name, topk=topk, checkpointFreq=args.checkpoint_freq)
+    trainer2.train(args.epochs, args.epochs)
     torch.save(model.state_dict(), args.name+".model")
