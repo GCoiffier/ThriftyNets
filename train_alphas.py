@@ -123,7 +123,7 @@ if __name__ == '__main__':
     alpha = (model.Lblock.alpha.data > 0.2).float().to(device)
     
     # Reinitialize model
-    model = get_model(args, metadata)
+    model = get_model(args, metadata).to(device)
     model.Lblock.alpha.data = alpha
     model.Lblock.alpha.requires_grad = False
 
