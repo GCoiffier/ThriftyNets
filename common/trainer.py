@@ -147,7 +147,7 @@ class Trainer:
                     lossval = lossFun.call(output, target, self).sum().item()
                     self.metrics["test_loss"] += lossval
                     if lossFun.name == "CrossEntropy":
-                        self.metrics["CE"] = lossval
+                        self.metrics["CE"] += lossval
                 self.metrics["test_acc"] += accuracy(output, target, topk=self.topk)
 
         self.metrics["test_loss"] /= len(self.test_data)
