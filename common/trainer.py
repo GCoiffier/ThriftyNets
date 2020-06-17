@@ -144,7 +144,7 @@ class Trainer:
                 data, target = data.to(self.device), target.to(self.device)
                 output = self.model(data)
                 for lossFun in self.losses:
-                    self.metrics["test_loss"] += lossFun.call(output, target, self).sum().item()  # sum up batch loss
+                    self.metrics["test_loss"] += lossFun.call(output, target, self)
                 self.metrics["test_acc"] += accuracy(output, target, topk=self.topk)
 
         self.metrics["test_loss"] /= len(self.test_data.dataset)
