@@ -117,7 +117,7 @@ class Trainer:
             
             loss = 0
             for lossFun in self.losses:
-                loss += lossFun.call(output, target, self)
+                loss += lossFun.call(output, target, self).sum().item()
             loss.backward() 
             
             for optim in self.optims:           
@@ -147,7 +147,7 @@ class Trainer:
                     self.metrics["test_loss"] += lossFun.call(output, target, self).sum().item()
                 self.metrics["test_acc"] += accuracy(output, target, topk=self.topk)
 
-        self.metrics["test_loss"] /= len(self.test_data.dataset)
+        self.metrics["test_loss"] /= len(self.test_data)
         self.metrics["test_acc"] /= len(self.test_data)
 
     def _call_end_forward_CB(self):
