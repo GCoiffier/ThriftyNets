@@ -78,6 +78,7 @@ class Trainer:
         self.metrics = dict()
         self.metrics["test_loss"] = 0
         self.metrics["train_loss"] = 0
+        self.metrics["CE"] = 0
         self.metrics["train_acc"] = torch.zeros(len(self.topk))
         self.metrics["test_acc"] = torch.zeros(len(self.topk))
 
@@ -132,6 +133,7 @@ class Trainer:
 
     def _test_on_dataset(self, epoch):
         self.metrics["test_loss"] = 0
+        self.metrics["CE"] = 0
         self.metrics["test_acc"] = torch.zeros(len(self.topk))
         self.model.eval()
         with torch.no_grad():
