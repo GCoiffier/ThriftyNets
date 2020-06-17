@@ -56,7 +56,7 @@ class ThriftyBlock(nn.Module):
             self.Lconv = MBConv(n_filters, n_filters//4, bias=self.bias)
         self.activ = get_activ(activ)
         
-        self.alpha = torch.zeros((n_iter, n_history)) + 1.0
+        self.alpha = torch.zeros((n_iter, n_history+1)) + 1.0
         self.alpha = nn.Parameter(self.alpha)
 
         self.n_parameters = sum(p.numel() for p in self.parameters())
@@ -76,7 +76,7 @@ class ThriftyBlock(nn.Module):
         for t in range(self.n_iter):
             a = self.Lconv(hist[-1])
             a = self.Lactiv(a)
-            #a = self.alpha[t,0] * a
+            a = self.alpha[t,0] * a
             for i, x in enumerate(hist):
                 if x is not None:
                     if self.alpha[t,i]==1.:
