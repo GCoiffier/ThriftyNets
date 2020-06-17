@@ -117,7 +117,7 @@ class Trainer:
             
             loss = 0
             for lossFun in self.losses:
-                loss += lossFun.call(output, target, self).sum().item()
+                loss += lossFun.call(output, target, self).sum()
             loss.backward() 
             
             for optim in self.optims:           
