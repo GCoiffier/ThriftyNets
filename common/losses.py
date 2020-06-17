@@ -12,7 +12,7 @@ class LossFun:
 
 class CrossEntropy(LossFun):
     def call(self, output, target, trainer):
-        return F.cross_entropy(output, target, reduction="sum").sum().item()
+        return F.cross_entropy(output, target)
 
 
 class AlphaLoss(LossFun):
