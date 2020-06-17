@@ -125,7 +125,7 @@ class Trainer:
                 optim.step()
 
             self.metrics["train_acc"] += accuracy(output, target, topk=self.topk)
-            self.metrics["train_loss"] += loss
+            self.metrics["train_loss"] += loss.item()
 
             self._call_end_forward_CB()
         self.metrics["epoch_time"] = (time.time() - t0)/60
