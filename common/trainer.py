@@ -144,7 +144,10 @@ class Trainer:
                 data, target = data.to(self.device), target.to(self.device)
                 output = self.model(data)
                 for lossFun in self.losses:
-                    self.metrics["test_loss"] += lossFun.call(output, target, self).sum().item()
+                    lossval = lossFun.call(output, target, self).sum().item()
+                    self.metrics["test_loss"] += lossval
+                    if lossFun.name == "CrossEntropy":
+                        self.metrics["CE"] = lossval
                 self.metrics["test_acc"] += accuracy(output, target, topk=self.topk)
 
         self.metrics["test_loss"] /= len(self.test_data)
@@ -159,7 +162,7 @@ class Trainer:
             cb.callOnEndTrain(self)
 
         if self.scheduler is not None:
-            self.scheduler.step(self.metrics["test_loss"])
+            self.scheduler.step(self.metrics["CE"])
         self.metrics["lr"] = self.optims[0].state_dict()["param_groups"][0]["lr"]
 
     def _call_end_test_CB(self):
