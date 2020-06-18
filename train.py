@@ -17,8 +17,6 @@ from common import utils
 from common.trainer import Trainer
 
 from thrifty.models import get_model, get_model_exact_params
-from thrifty.sandbox import *
-
 
 if __name__ == '__main__':
     try:
@@ -44,9 +42,6 @@ if __name__ == '__main__':
             topk=(1,)
 
     model = get_model(args, metadata)
-    #model = UnfactorThriftyNet(metadata["input_shape"], metadata["n_classes"], args.filters, args.iter, args.pool, args.activ, args.conv_mode, args.bias)
-    #model = factorized_resnet18(metadata["n_classes"])
-    #model = resnet18()
 
     # In case we want an exact number of parameters
     if args.n_params is not None and args.model not in ["block_thrifty", "blockthrifty"]:
