@@ -85,7 +85,7 @@ class ThriftyBlock(nn.Module):
                     if self.alpha[t,i]==1.:
                         a = a + x
                     elif self.alpha[t,i] != 0.:
-                        a = a + self.alpha[t,i] * x
+                        a = a + self.alpha[t,i+1] * x
             a = self.Lnormalization[t](a)
 
             for i in range(1, self.n_history-1):
