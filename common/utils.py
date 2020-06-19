@@ -35,9 +35,8 @@ def args():
     parser.add_argument('-epochs', '--epochs', type=int, default=200)
 
     # Scheduler
-    parser.add_argument('--min-lr', type=float, default=1e-4)
+    parser.add_argument('--gamma', type=float, default=0.1, help="LR decay factor")
     parser.add_argument('--patience', type=int, default=7)
-    parser.add_argument('--gamma', type=float, default=0.5, help="LR decay factor")
 
     # Misc
     parser.add_argument('--checkpoint-freq', type=int, default=0, metavar='N',

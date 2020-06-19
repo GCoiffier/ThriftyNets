@@ -165,8 +165,8 @@ class Trainer:
             cb.callOnEndTrain(self)
 
         if self.scheduler is not None:
-            self.scheduler.step(self.metrics["CE"])
-        self.metrics["lr"] = self.optims[0].state_dict()["param_groups"][0]["lr"]
+            self.scheduler.step()
+        self.metrics["lr"] = self.scheduler.get_last_lr()
 
     def _call_end_test_CB(self):
         for cb in self.callbacks:
