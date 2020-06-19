@@ -57,7 +57,12 @@ class Trainer:
         else :
             self.losses = [losses]
 
-        self.scheduler = scheduler
+        if type(scheduler) in [list, tuple]:
+            self.scheduler = scheduler
+        elif scheduler is not None:
+            self.scheduler = [scheduler]
+        else:
+            self.scheduler = []
         
         self.name = "unnamed"
         self.logFile = "unnamed.log"
@@ -84,9 +89,11 @@ class Trainer:
 
         self.callbacks = [TqdmCB()]
         if self.name != "unnamed":
-            self.callbacks.append(CheckpointCB())
             self.callbacks.append(LoggerCB())
-    
+            if self.checkpointFreq>0:
+                self.callbacks.append(CheckpointCB())
+        if self.scheduler is not None:
+            self.callbacks.append(SchedulerCB())
 
     def train(self, Nepochs, epoch_start=1):
         for epoch in range(epoch_start, epoch_start+Nepochs):
@@ -162,11 +169,7 @@ class Trainer:
 
     def _call_end_train_CB(self):
         for cb in self.callbacks:
-            cb.callOnEndTrain(self)
-
-        if self.scheduler is not None:
-            self.scheduler.step()
-        self.metrics["lr"] = self.scheduler.get_last_lr()
+            cb.callOnEndTrain(self) 
 
     def _call_end_test_CB(self):
         for cb in self.callbacks:
