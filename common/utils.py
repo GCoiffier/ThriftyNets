@@ -36,7 +36,7 @@ def args():
 
     # Scheduler
     parser.add_argument('--gamma', type=float, default=0.1, help="LR decay factor")
-    parser.add_argument('--patience', type=int, default=7)
+    parser.add_argument('--steps', type=int, nargs="+", default=[50,100,150])
 
     # Misc
     parser.add_argument('--checkpoint-freq', type=int, default=0, metavar='N',
