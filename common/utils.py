@@ -51,6 +51,13 @@ def args():
 
     return parser
 
+def reduceLR(epoch, gamma, steps=None):
+    if steps is None:
+        return 1.0
+    else:
+        times = len([x for x in steps if x<=epoch])
+        return gamma**times
+
 class Logger:
 
     def __init__(self, file_path="no_name.log", verbose=False):

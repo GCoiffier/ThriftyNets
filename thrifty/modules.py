@@ -85,7 +85,7 @@ class ThriftyBlock(nn.Module):
                     a = a + self.alpha[t,i+1] * x
             a = self.Lnormalization[t](a)
 
-            for i in range(1, self.n_history-1):
+            for i in range(self.n_history-1):
                 hist[i] = hist[i+1]
             hist[self.n_history-1] = a
 
@@ -97,7 +97,8 @@ class ThriftyBlock(nn.Module):
 
 
 class BasicBlock(nn.Module):
-    """Basic Block for resnet 18 and resnet 34
+    """
+    Basic Block for resnet 18 and resnet 34
     """
 
     #BasicBlock and BottleNeck block 

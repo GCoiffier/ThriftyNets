@@ -75,7 +75,10 @@ if __name__ == '__main__':
     scheduler = None
     if args.optimizer=="sgd":
         optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
-        scheduler = ReduceLROnPlateau(optimizer, factor=args.gamma, patience=args.patience, min_lr=args.min_lr, verbose=True)
+        #scheduler = ReduceLROnPlateau(optimizer, factor=args.gamma, patience=args.patience, min_lr=args.min_lr, verbose=True)
+        schedule_fun = lambda epoch, gamma=args.gamma : utils.reduceLR(epoch, gamma, [40,80,120,160])
+        scheduler = LambdaLR(optimizer, lr_lambda= schedule_fun)
+
     elif args.optimizer=="adam":
         optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
 
