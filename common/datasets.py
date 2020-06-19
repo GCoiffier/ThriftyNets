@@ -136,79 +136,40 @@ def load_cifar100(args):
     return train_loader, test_loader, metadata
 
 
-class MiniImageNet(torch.utils.data.Dataset):
-
-    def __init__(self, root_path, train=True, transform=None):
-        self.train = train
-
-        unique_labels = os.listdir(root_path)
-        self.labels = {}
-        for i,l in enumerate(unique_labels):
-            self.labels[l] = i
-        
-        self.all = []
-        for l in unique_labels:
-            p = os.path.join(MINI_IMAGENET_PATH, l)
-            self.all += [[l,x] for x in os.listdir(p)]
-
-        self.split = int(0.9*len(self.all))
-        self.train_ex = self.all[:self.split]
-        self.test_ex = self.all[self.split:]
-        np.random.shuffle(self.train_ex)
-        self.transform = transform
-
-    def __getitem__(self, i):
-        if self.train :
-            label, img_name = self.train_ex[i]
-        else:
-            label, img_name = self.test_ex[i]
-        path = os.path.join(MINI_IMAGENET_PATH, label)
-        path = os.path.join(path, img_name)
-        img = Image.open(path).convert("RGB")
-        return (self.transform(img), self.labels[label])
-
-    def __len__(self):
-        return len(self.train_ex) if self.train else len(self.test_ex)
-
-
-def load_miniImageNet(miniimgnet_path, args, **kwargs):
+def load_svhn(args, **kwargs):
     
-    if args.auto_augment:
-        transform_train = transforms.Compose([
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            ImageNetPolicy(),
-            transforms.Normalize(np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]), 
-                                np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]))
-        ])
-    else:
-        transform_train = transforms.Compose([
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize(np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]), 
-                                np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]))
-        ])
+    SVHN_MEAN = (0.5, 0.5, 0.5)
+    SVHN_STD  = (0.5, 0.5, 0.5)
+
+    transform_list = []
+    transform_list.append(transforms.RandomCrop(32, padding=4))
+
+    if args.cutout>0:
+        transform_list.append(Cutout(args.cutout))
     
+    transform_list.append(transforms.ToTensor())
+    transform_list.append(transforms.Normalize(SVHN_MEAN, SVHN_STD ))
+
+    transform_train = transforms.Compose(transform_list)
     transform_test = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(np.array([x / 255.0 for x in [125.3, 123.0, 113.9]]), 
-                             np.array([x / 255.0 for x in [63.0, 62.1, 66.7]]))])
+        transforms.Normalize(SVHN_MEAN, SVHN_STD),
+    ])
 
     train_loader = torch.utils.data.DataLoader(
-        MiniImageNet(miniimgnet_path, train=True, transform=transform_train),
-        batch_size=args.batch_size, shuffle=True, **kwargs
+        datasets.SVHN(os.path.join(DATA_PATH, 'svhn'), train=True, download=True, transform=transform_train),
+        batch_size=args.batch_size, shuffle=True
     )
 
     test_loader = torch.utils.data.DataLoader(
-        MiniImageNet(miniimgnet_path, train=False, transform=transform_test),
-        batch_size=args.batch_size, shuffle=True, **kwargs
+        datasets.SVHN(os.path.join(DATA_PATH, 'svhn'), train=False, download=True, transform=transform_test),
+        batch_size=args.test_batch_size, shuffle=False
     )
 
     metadata = {
-        "input_shape" : (3,84,84),
-        "n_classes" : 64
+        "input_shape" : (3,32,32),
+        "n_classes" : 10
     }
-
     return train_loader, test_loader, metadata
 
 
@@ -273,10 +234,8 @@ def get_data_loaders(args, **kwargs):
     elif dataset_name == "cifar100":
         return load_cifar100(args, **kwargs)
     
-    elif dataset_name == "miniimagenet":
-        if len(args.dataset)<2:
-            raise Exception("Please specify root folder : `-dataset miniimagenet path/to/miniimagenet/folder/")
-        return load_miniImageNet(args.dataset[1], args, **kwargs)
+    elif dataset_name == "svhn":
+        return load_svhn(args, **kwargs)
 
     elif dataset_name == "imagenet":
         if len(args.dataset)<2:
