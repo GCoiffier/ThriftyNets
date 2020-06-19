@@ -72,7 +72,8 @@ class TqdmCB(Callback):
         bidx = trainer.metrics["batch_idx"]
         lr = trainer.metrics["lr"]
         train_loss = trainer.metrics["train_loss"]/(1+bidx)
-        test_loss = trainer.metrics["test_loss"]
+        #test_loss = trainer.metrics["test_loss"]
+        test_loss = trainer.metrics["CE"]
 
         train_acc = trainer.metrics["train_acc"]/(1+bidx)
         test_acc = trainer.metrics["test_acc"]
