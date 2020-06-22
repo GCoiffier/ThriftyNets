@@ -77,7 +77,6 @@ if __name__ == '__main__':
         optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
         schedule_fun = lambda epoch, gamma=args.gamma, steps=args.steps : utils.reduceLR(epoch, gamma, steps)
         scheduler = LambdaLR(optimizer, lr_lambda= schedule_fun)
-
     elif args.optimizer=="adam":
         optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
 
