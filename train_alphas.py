@@ -106,6 +106,8 @@ if __name__ == '__main__':
         trainer1.temperature = args.starting_temp
         trainer1.callbacks.append(AlphaCallback(args.alpha))
         trainer1.train(args.epochs)
+        
+        torch.save(model.state_dict(), args.name+".model")
 
     else: # arg.resume is not None
         model.load_state_dict(torch.load(args.resume))
@@ -122,7 +124,8 @@ if __name__ == '__main__':
 
     # Beginning of second training phase
     optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
-    scheduler = ReduceLROnPlateau(optimizer, factor=args.gamma, patience=args.patience, min_lr=args.min_lr)
+    schedule_fun = lambda epoch, gamma=args.gamma, steps=args.steps : utils.reduceLR(epoch, gamma, steps)
+    scheduler = LambdaLR(optimizer, lr_lambda= schedule_fun)
 
     trainer2 = Trainer(device, model, dataset, optimizer, CrossEntropy(), scheduler, name=args.name, topk=topk, checkpointFreq=args.checkpoint_freq)
     trainer2.train(args.epochs, args.epochs)
