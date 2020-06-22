@@ -157,12 +157,12 @@ def load_svhn(args, **kwargs):
     ])
 
     train_loader = torch.utils.data.DataLoader(
-        datasets.SVHN(os.path.join(DATA_PATH, 'svhn'), train=True, download=True, transform=transform_train),
+        datasets.SVHN(os.path.join(DATA_PATH, 'svhn'), split="train", download=True, transform=transform_train),
         batch_size=args.batch_size, shuffle=True
     )
 
     test_loader = torch.utils.data.DataLoader(
-        datasets.SVHN(os.path.join(DATA_PATH, 'svhn'), train=False, download=True, transform=transform_test),
+        datasets.SVHN(os.path.join(DATA_PATH, 'svhn'), split="test", download=True, transform=transform_test),
         batch_size=args.test_batch_size, shuffle=False
     )
 
