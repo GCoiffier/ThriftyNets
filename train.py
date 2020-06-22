@@ -19,11 +19,8 @@ from common.trainer import Trainer
 from thrifty.models import get_model, get_model_exact_params
 
 if __name__ == '__main__':
-    try:
-        os.mkdir("logs")
-    except:
-        pass
-
+    os.makedirs("logs", exist_ok=True)
+    
     parser = utils.args()
     args = parser.parse_args()
     print(args)

@@ -41,11 +41,7 @@ class AlphaLoss(LossFun):
         return loss
 
 if __name__ == '__main__':
-
-    try:
-        os.mkdir("logs")
-    except:
-        pass
+    os.makedirs("logs", exist_ok=True)
 
     parser = utils.args()
     parser.add_argument("-alpha", "--alpha", type=float, default = 1.5e-4)
