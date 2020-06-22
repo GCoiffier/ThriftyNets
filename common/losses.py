@@ -18,15 +18,3 @@ class CrossEntropy(LossFun):
 
     def call(self, output, target, trainer):
         return F.cross_entropy(output, target)
-
-
-class AlphaLoss(LossFun):
-    
-    name = "AlphaLoss"
-
-    def call(self, output, target, trainer):
-        temp = trainer.temperature
-        x = trainer.model.Lblock.alpha.data
-        loss = x*x*(1-x)*(1-x)
-        loss = torch.sum(temp*loss)
-        return loss

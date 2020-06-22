@@ -14,7 +14,7 @@ from common.datasets import get_data_loaders
 from common import utils
 from common.trainer import Trainer
 from common.callback import Callback
-from common.losses import *
+from common.losses import LossFun
 
 from thrifty.models import get_model, get_model_exact_params
 
@@ -29,6 +29,16 @@ class AlphaCallback(Callback):
     def callOnEndForward(self, trainer):
         trainer.temperature *= (1 + self.alph)
 
+class AlphaLoss(LossFun):
+    
+    name = "AlphaLoss"
+
+    def call(self, output, target, trainer):
+        temp = trainer.temperature
+        x = trainer.model.Lblock.alpha.data
+        loss = x*x*(1-x)*(1-x)
+        loss = torch.sum(temp*loss)
+        return loss
 
 if __name__ == '__main__':
 
@@ -100,13 +110,14 @@ if __name__ == '__main__':
     else: # arg.resume is not None
         model.load_state_dict(torch.load(args.resume))
 
-    """
     print("-"*80)
-    print("BINARIZATION\n")
+    print("Binarize and fine tune\n")
+    print("")
+    FROZEN_ALPHA = (model.Lblock.alpha.data > 0.2).float().to(device)
+
     with open("logs/{}.log".format(args.name), "a") as f:
-        f.write("*******\nShortcut Binarization\n*******\n")
-    model.Lblock.alpha.data = (model.Lblock.alpha.data > 0.2).float().to(device)
-    print(model.Lblock.alpha)
+        f.write("*******\nFine tuning after binarization\n*******\n")
+    model.Lblock.alpha.data = FROZEN_ALPHA
     model.Lblock.alpha.requires_grad = False
 
     # Beginning of second training phase
@@ -114,26 +125,23 @@ if __name__ == '__main__':
     scheduler = ReduceLROnPlateau(optimizer, factor=args.gamma, patience=args.patience, min_lr=args.min_lr)
 
     trainer2 = Trainer(device, model, dataset, optimizer, CrossEntropy(), scheduler, name=args.name, topk=topk, checkpointFreq=args.checkpoint_freq)
-    trainer2.train(args.epochs//4, 3*args.epochs//4)
-    torch.save(model.state_dict(), args.name+".model")
-    """
+    trainer2.train(args.epochs, args.epochs)
 
     print("\n"+"-"*80)
-    print("BINARIZATION\n")
+    print("Train again from scratch\n")
+    print("")
     with open("logs/{}.log".format(args.name), "a") as f:
-        f.write("*******\nShortcut Binarization\n*******\n")
-    alpha = (model.Lblock.alpha.data > 0.2).float().to(device)
+        f.write("*******\nTrain from scratch after binarization\n*******\n")
     
     # Reinitialize model
     model = get_model(args, metadata).to(device)
-    model.Lblock.alpha.data = alpha
+    model.Lblock.alpha.data = FROZEN_ALPHA
     model.Lblock.alpha.requires_grad = False
 
-    # Beginning of second training phase
+    # Beginning of third training phase
     optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
     schedule_fun = lambda epoch, gamma=args.gamma, steps=args.steps : utils.reduceLR(epoch, gamma, steps)
     scheduler = LambdaLR(optimizer, lr_lambda= schedule_fun)
 
-    trainer2 = Trainer(device, model, dataset, optimizer, CrossEntropy(), scheduler, name=args.name, topk=topk, checkpointFreq=args.checkpoint_freq)
-    trainer2.train(args.epochs, args.epochs)
-    torch.save(model.state_dict(), args.name+".model")
+    trainer3 = Trainer(device, model, dataset, optimizer, CrossEntropy(), scheduler, name=args.name, topk=topk, checkpointFreq=args.checkpoint_freq)
+    trainer3.train(args.epochs, args.epochs)
