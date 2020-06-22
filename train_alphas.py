@@ -14,7 +14,7 @@ from common.datasets import get_data_loaders
 from common import utils
 from common.trainer import Trainer
 from common.callback import Callback
-from common.losses import LossFun
+from common.losses import *
 
 from thrifty.models import get_model, get_model_exact_params
 
