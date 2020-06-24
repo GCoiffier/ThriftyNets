@@ -64,8 +64,8 @@ if __name__ == '__main__':
 
     model = get_model(args, metadata)
 
-    CONV_WEIGHT_BACKUP1 = model.Lblock.Lconv.conv1.data
-    CONV_WEIGHT_BACKUP2 = model.Lblock.Lconv.conv2.data
+    CONV_WEIGHT_BACKUP1 = model.Lblock.Lconv.conv1.weight.data
+    CONV_WEIGHT_BACKUP2 = model.Lblock.Lconv.conv2.weight.data
 
     if args.n_params is not None and args.model not in ["block_thrifty", "blockthrifty"]:
         model, args = get_model_exact_params(model, args, metadata)
@@ -139,8 +139,8 @@ if __name__ == '__main__':
     # Reinitialize model
     model = get_model(args, metadata).to(device)
     model.Lblock.alpha.data = FROZEN_ALPHA
-    model.Lblock.Lconv.conv1.data = CONV_WEIGHT_BACKUP1
-    model.Lblock.Lconv.conv2.data = CONV_WEIGHT_BACKUP2
+    model.Lblock.Lconv.conv1.weight.data = CONV_WEIGHT_BACKUP1
+    model.Lblock.Lconv.conv2.weight.data = CONV_WEIGHT_BACKUP2
     model.Lblock.alpha.requires_grad = False
 
     # Beginning of third training phase
