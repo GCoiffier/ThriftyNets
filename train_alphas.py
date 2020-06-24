@@ -63,6 +63,10 @@ if __name__ == '__main__':
             topk=(1,)
 
     model = get_model(args, metadata)
+
+    CONV_WEIGHT_BACKUP1 = model.Lblock.Lconv.conv1.data
+    CONV_WEIGHT_BACKUP2 = model.Lblock.Lconv.conv2.data
+
     if args.n_params is not None and args.model not in ["block_thrifty", "blockthrifty"]:
         model, args = get_model_exact_params(model, args, metadata)
        
@@ -127,10 +131,31 @@ if __name__ == '__main__':
     trainer2.train(args.epochs, args.epochs)
 
     print("\n"+"-"*80)
-    print("Train again from scratch\n")
+    print("Train again from scratch with same initialization\n")
     print("")
     with open("logs/{}.log".format(args.name), "a") as f:
-        f.write("*******\nTrain from scratch after binarization\n*******\n")
+        f.write("*******\nTrain from scratch with same init\n*******\n")
+    
+    # Reinitialize model
+    model = get_model(args, metadata).to(device)
+    model.Lblock.alpha.data = FROZEN_ALPHA
+    model.Lblock.Lconv.conv1.data = CONV_WEIGHT_BACKUP1
+    model.Lblock.Lconv.conv2.data = CONV_WEIGHT_BACKUP2
+    model.Lblock.alpha.requires_grad = False
+
+    # Beginning of third training phase
+    optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
+    schedule_fun = lambda epoch, gamma=args.gamma, steps=args.steps : utils.reduceLR(epoch, gamma, steps)
+    scheduler = LambdaLR(optimizer, lr_lambda= schedule_fun)
+
+    trainer3 = Trainer(device, model, dataset, optimizer, CrossEntropy(), scheduler, name=args.name, topk=topk, checkpointFreq=args.checkpoint_freq)
+    trainer3.train(args.epochs, args.epochs)
+
+    print("\n"+"-"*80)
+    print("Train again from scratch, another init\n")
+    print("")
+    with open("logs/{}.log".format(args.name), "a") as f:
+        f.write("*******\nTrain from scratch another init\n*******\n")
     
     # Reinitialize model
     model = get_model(args, metadata).to(device)
@@ -142,5 +167,5 @@ if __name__ == '__main__':
     schedule_fun = lambda epoch, gamma=args.gamma, steps=args.steps : utils.reduceLR(epoch, gamma, steps)
     scheduler = LambdaLR(optimizer, lr_lambda= schedule_fun)
 
-    trainer3 = Trainer(device, model, dataset, optimizer, CrossEntropy(), scheduler, name=args.name, topk=topk, checkpointFreq=args.checkpoint_freq)
-    trainer3.train(args.epochs, args.epochs)
+    trainer4 = Trainer(device, model, dataset, optimizer, CrossEntropy(), scheduler, name=args.name, topk=topk, checkpointFreq=args.checkpoint_freq)
+    trainer4.train(args.epochs, args.epochs)

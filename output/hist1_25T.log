@@ -1,4 +1,0 @@
-Namespace(activ='tanh', auto_augment=False, batch_size=100, bias=False, checkpoint_freq=0, conv_mode='mb1', cutout=0, dataset=['cifar10'], epochs=150, filters=168, gamma=0.1, history=1, iter=25, learning_rate=0.1, model='res_thrifty', momentum=0.9, n_params=40000, name='hist1_25T', nesterov=True, optimizer='sgd', out_mode='pool', pool=[5], resume=None, seed=32410, steps=[50, 100, 130], test_batch_size=100, topk=None, weight_decay=0.0005)
-Parameters : 39876
-Filters : 168
-*******

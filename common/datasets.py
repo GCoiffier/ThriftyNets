@@ -143,7 +143,9 @@ def load_svhn(args, **kwargs):
 
     transform_list = []
     transform_list.append(transforms.RandomCrop(32, padding=4))
-
+    
+    if args.auto_augment:
+       transform_list.append(SVHNPolicy())
     if args.cutout>0:
         transform_list.append(Cutout(args.cutout))
     
