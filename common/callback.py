@@ -96,4 +96,7 @@ class SchedulerCB(Callback):
     def callOnEndTrain(self, trainer):
         for sched in trainer.scheduler:
             sched.step()
-            trainer.metrics["lr"] = sched.get_last_lr()
+            try:
+                trainer.metrics["lr"] = sched.get_last_lr()
+            except:
+                trainer.metrics["lr"] = sched.get_lr()
