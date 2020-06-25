@@ -64,12 +64,12 @@ if __name__ == '__main__':
 
     model = get_model(args, metadata)
 
-    CONV_WEIGHT_BACKUP1 = model.Lblock.Lconv.conv1.weight.data
-    CONV_WEIGHT_BACKUP2 = model.Lblock.Lconv.conv2.weight.data
-
     if args.n_params is not None and args.model not in ["block_thrifty", "blockthrifty"]:
         model, args = get_model_exact_params(model, args, metadata)
        
+    CONV_WEIGHT_BACKUP1 = model.Lblock.Lconv.conv1.weight.data
+    CONV_WEIGHT_BACKUP2 = model.Lblock.Lconv.conv2.weight.data
+    
     # Log for parameters, filters and pooling strategy
     n_parameters = sum(p.numel() for p in model.parameters())
     print("N parameters : ", n_parameters)
@@ -123,7 +123,7 @@ if __name__ == '__main__':
     model.Lblock.alpha.requires_grad = False
 
     # Beginning of second training phase
-    optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
+    optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.learning_rate/10, momentum=args.momentum, weight_decay=args.weight_decay)
     schedule_fun = lambda epoch, gamma=args.gamma, steps=args.steps : utils.reduceLR(epoch, gamma, steps)
     scheduler = LambdaLR(optimizer, lr_lambda= schedule_fun)
 
