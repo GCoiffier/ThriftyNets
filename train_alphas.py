@@ -128,7 +128,7 @@ if __name__ == '__main__':
     scheduler = LambdaLR(optimizer, lr_lambda= schedule_fun)
 
     trainer2 = Trainer(device, model, dataset, optimizer, CrossEntropy(), scheduler, name=args.name, topk=topk, checkpointFreq=args.checkpoint_freq)
-    trainer2.train(args.epochs, args.epochs)
+    #trainer2.train(args.epochs, args.epochs)
 
     print("\n"+"-"*80)
     print("Train again from scratch with same initialization\n")
@@ -139,8 +139,8 @@ if __name__ == '__main__':
     # Reinitialize model
     model = get_model(args, metadata).to(device)
     model.Lblock.alpha.data = FROZEN_ALPHA
-    model.Lblock.Lconv.conv1.weight.data = CONV_WEIGHT_BACKUP1
-    model.Lblock.Lconv.conv2.weight.data = CONV_WEIGHT_BACKUP2
+    model.Lblock.Lconv.conv1.weight.data = CONV_WEIGHT_BACKUP1.to(device)
+    model.Lblock.Lconv.conv2.weight.data = CONV_WEIGHT_BACKUP2.to(device)
     model.Lblock.alpha.requires_grad = False
 
     # Beginning of third training phase
