@@ -36,9 +36,9 @@ class LoggerCB(Callback):
         if trainer.logger is not None:
             trainer.logger.update({"epoch" :  trainer.metrics["epoch"]})
             trainer.logger.update({"time" :  trainer.metrics["epoch_time"]})
-            trainer.logger.update({"train_loss" : trainer.metrics["train_loss"]})
+            trainer.logger.update({"train_loss" : trainer.metrics["train_loss"] / trainer.metrics["batch_idx"]})
             for i,k in enumerate(trainer.topk):
-                trainer.logger.update({"train_acc(top{})".format(k) : trainer.metrics["train_acc"][i]})
+                trainer.logger.update({"train_acc(top{})".format(k) : trainer.metrics["train_acc"][i] / trainer.metrics["batch_idx"] })
 
     def callOnEndTest(self, trainer):
         if trainer.logger is not None:
