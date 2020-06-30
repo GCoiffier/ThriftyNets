@@ -13,7 +13,7 @@ import sys
 from common.datasets import get_data_loaders
 from common import utils
 from common.trainer import Trainer
-from common.callback import Callback
+from common.callback import *
 from common.losses import *
 
 from thrifty.models import get_model, get_model_exact_params
@@ -71,12 +71,10 @@ if __name__ == '__main__':
     CONV_WEIGHT_BACKUP2 = model.Lblock.Lconv.conv2.weight.data
     
     # Log for parameters, filters and pooling strategy
-    n_parameters = sum(p.numel() for p in model.parameters())
-    print("N parameters : ", n_parameters)
-    if (hasattr(model, "n_filters")):
-        print("N filters : ", model.n_filters)
-    if (hasattr(model, "pool_stategy")):
-        print("Pool strategy : ", model.pool_strategy)
+    info_dict = utils.get_info(model, metadata)
+    for key,val in info_dict.items():
+        print(key, " : ", val)
+    print("")
     
     model = model.to(device)
 
@@ -102,9 +100,12 @@ if __name__ == '__main__':
                 f.write("\n*******\n")
             print("-"*80 + "\n")
 
-        trainer1 = Trainer(device, model, dataset, optimizer, [CrossEntropy(), AlphaLoss()], scheduler, name=args.name, topk=topk, checkpointFreq=args.checkpoint_freq)
+        trainer1 = Trainer(device, model, dataset, optimizer, [CrossEntropy(), AlphaLoss()], name=args.name, topk=topk, checkpointFreq=args.checkpoint_freq)
         trainer1.temperature = args.starting_temp
         trainer1.callbacks.append(AlphaCallback(args.alpha))
+        if scheduler is not None:
+            trainer1.callbacks.append(SchedulerCB(scheduler))
+
         trainer1.train(args.epochs)
         
         torch.save(model.state_dict(), args.name+".model")
@@ -123,11 +124,12 @@ if __name__ == '__main__':
     model.Lblock.alpha.requires_grad = False
 
     # Beginning of second training phase
-    optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.learning_rate/10, momentum=args.momentum, weight_decay=args.weight_decay)
+    optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
     schedule_fun = lambda epoch, gamma=args.gamma, steps=args.steps : utils.reduceLR(epoch, gamma, steps)
     scheduler = LambdaLR(optimizer, lr_lambda= schedule_fun)
 
-    trainer2 = Trainer(device, model, dataset, optimizer, CrossEntropy(), scheduler, name=args.name, topk=topk, checkpointFreq=args.checkpoint_freq)
+    trainer2 = Trainer(device, model, dataset, optimizer, CrossEntropy(), name=args.name, topk=topk, checkpointFreq=args.checkpoint_freq)
+    trainer2.callbacks.append(SchedulerCB(scheduler))
     trainer2.train(args.epochs, args.epochs)
 
     print("\n"+"-"*80)
@@ -148,7 +150,8 @@ if __name__ == '__main__':
     schedule_fun = lambda epoch, gamma=args.gamma, steps=args.steps : utils.reduceLR(epoch, gamma, steps)
     scheduler = LambdaLR(optimizer, lr_lambda= schedule_fun)
 
-    trainer3 = Trainer(device, model, dataset, optimizer, CrossEntropy(), scheduler, name=args.name, topk=topk, checkpointFreq=args.checkpoint_freq)
+    trainer3 = Trainer(device, model, dataset, optimizer, CrossEntropy(), name=args.name, topk=topk, checkpointFreq=args.checkpoint_freq)
+    trainer3.callbacks.append(SchedulerCB(scheduler))
     trainer3.train(args.epochs, args.epochs)
 
     print("\n"+"-"*80)
@@ -167,5 +170,6 @@ if __name__ == '__main__':
     schedule_fun = lambda epoch, gamma=args.gamma, steps=args.steps : utils.reduceLR(epoch, gamma, steps)
     scheduler = LambdaLR(optimizer, lr_lambda= schedule_fun)
 
-    trainer4 = Trainer(device, model, dataset, optimizer, CrossEntropy(), scheduler, name=args.name, topk=topk, checkpointFreq=args.checkpoint_freq)
+    trainer4 = Trainer(device, model, dataset, optimizer, CrossEntropy(), name=args.name, topk=topk, checkpointFreq=args.checkpoint_freq)
+    trainer4.callbacks.append(SchedulerCB(scheduler))
     trainer4.train(args.epochs, args.epochs)

@@ -40,7 +40,7 @@ class Trainer:
         Indicator for which metrics to measure during testing. Default is (1,), that is measuring top1 accuracy.
     """
 
-    def __init__(self, device, model, dataset, optims, losses, scheduler=None, name=None, topk=(1,), checkpointFreq=0):
+    def __init__(self, device, model, dataset, optims, losses, name=None, topk=(1,), checkpointFreq=0):
         self.device = device
 
         self.model = model
@@ -56,13 +56,6 @@ class Trainer:
             self.losses = [x for x in losses]
         else :
             self.losses = [losses]
-
-        if type(scheduler) in [list, tuple]:
-            self.scheduler = scheduler
-        elif scheduler is not None:
-            self.scheduler = [scheduler]
-        else:
-            self.scheduler = []
         
         self.name = "unnamed"
         self.logFile = "unnamed.log"
@@ -92,8 +85,6 @@ class Trainer:
             self.callbacks.append(LoggerCB())
             if self.checkpointFreq>0:
                 self.callbacks.append(CheckpointCB())
-        if self.scheduler is not None:
-            self.callbacks.append(SchedulerCB())
 
     def train(self, Nepochs, epoch_start=1):
         for epoch in range(epoch_start, epoch_start+Nepochs):

@@ -4,6 +4,31 @@ import random
 import argparse
 import numpy as np
 
+try:
+    from ptflops import get_model_complexity_info
+    def get_info(model, metadata):
+        macs, params = get_model_complexity_info(model, metadata["input_shape"], as_strings=True, print_per_layer_stat=False, verbose=False)
+        infos = {
+            "parameters" : params,
+            "flops" : macs,
+        }
+        if (hasattr(model, "n_filters")):
+            infos["filters"] = model.n_filters
+        if (hasattr(model, "pool_stategy")):
+            infos["pool_strategy"] = model.pool_strategy
+        return infos
+        
+except:
+    def get_info(model, metadata):
+        infos = {
+            "parameters" : sum(p.numel() for p in model.parameters())
+        }
+        if (hasattr(model, "n_filters")):
+            infos["filters"] = model.n_filters
+        if (hasattr(model, "pool_stategy")):
+            infos["pool_strategy"] =  model.pool_strategy
+        return infos
+
 def args():
     parser = argparse.ArgumentParser(description='ThritfyNets')
 

@@ -178,7 +178,7 @@ class EmbeddedThriftyNet(nn.Module):
         self.n_filters = n_filters
         self.pool_strategy = pool_strategy
         
-        self.Lembed = ResNetEmbedder(64, BasicBlock, [1, 1])
+        self.Lembed = ResNetEmbedder(64, BasicBlock, [1, 1], n_classes)
         self.embed_shape = (128,16,16) # output shape of the embedder
 
         self.Lthrifty = ThriftyBlock(n_filters, n_iter, n_history, pool_strategy, conv_mode=conv_mode, activ=activ, bias=bias)

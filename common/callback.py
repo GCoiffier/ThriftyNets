@@ -93,8 +93,14 @@ class TqdmCB(Callback):
 
 class SchedulerCB(Callback):
 
+    def __init__(self, scheduler):
+        if type(scheduler) in [list, tuple]:
+            self.scheduler = list(scheduler)
+        else:
+            self.scheduler = [scheduler]
+
     def callOnEndTrain(self, trainer):
-        for sched in trainer.scheduler:
+        for sched in self.scheduler:
             sched.step()
             try:
                 trainer.metrics["lr"] = sched.get_last_lr()

@@ -13,10 +13,12 @@ import sys
 
 from common.datasets import get_data_loaders
 from common.losses import *
+from common.callback import *
 from common import utils
 from common.trainer import Trainer
 
 from thrifty.models import get_model, get_model_exact_params
+from thrifty.sandbox import resnet18
 
 if __name__ == '__main__':
     os.makedirs("logs", exist_ok=True)
@@ -45,23 +47,19 @@ if __name__ == '__main__':
         model, args = get_model_exact_params(model, args, metadata)
 
     # Log for parameters, filters and pooling strategy
-    n_parameters = sum(p.numel() for p in model.parameters())
-    print("N parameters : ", n_parameters)
-    if (hasattr(model, "n_filters")):
-        print("N filters : ", model.n_filters)
-    if (hasattr(model, "pool_stategy")):
-        print("Pool strategy : ", model.pool_strategy)
-    
+    info_dict = utils.get_info(model, metadata)
+    for key,val in info_dict.items():
+        print(key, " : ", val)
+    print("")
+
     if args.name is not None:
         with open("logs/{}.log".format(args.name), "a") as f:
             f.write(str(args))
-            f.write("\nParameters : {}".format(n_parameters))
-            if hasattr(model, "n_filters"):
-                f.write("\nFilters : {}".format(model.n_filters))
-            else:
-                f.write("\nFilters : _ ")
+            for key,val in info_dict.items():
+                f.write("{} : {}\n".format(key, val))
             f.write("\n*******\n")
         print("-"*80 + "\n")
+    
 
     # Eventually resume training
     if args.resume is not None:
@@ -77,7 +75,10 @@ if __name__ == '__main__':
     elif args.optimizer=="adam":
         optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
 
-    trainer = Trainer(device, model, dataset, optimizer, CrossEntropy(), scheduler, args.name, topk, args.checkpoint_freq)
+    trainer = Trainer(device, model, dataset, optimizer, CrossEntropy(), args.name, topk, args.checkpoint_freq)
+
+    if scheduler is not None:
+        trainer.callbacks.append(SchedulerCB(scheduler))
 
     trainer.train(args.epochs)
     torch.save(model.state_dict(), args.name+".model")
