@@ -14,7 +14,7 @@ class Trainer:
     ----------
 
     'device : torch.device
-        The device on which the training occurs (cpu or cuda)
+        The device on which the training occurs (cpu or gpu id list)
 
     'model' : torch.nn.Module 
         A torch model to be trained
@@ -109,7 +109,8 @@ class Trainer:
                                             unit="batch"):
 
             self.metrics["batch_idx"] = batch_idx
-            data, target = data.to(self.device), target.to(self.device)
+            if self.device!="cpu":
+                data, target = data.cuda(self.device), target.cuda(self.device)
             for optim in self.optims :
                 optim.zero_grad()
             output = self.model(data)
@@ -141,7 +142,8 @@ class Trainer:
                                      leave=False, 
                                      ncols=100,
                                      unit="batch"):
-                data, target = data.to(self.device), target.to(self.device)
+                if self.device!="cpu":
+                    data, target = data.cuda(self.device), target.cuda(self.device)
                 output = self.model(data)
                 for lossFun in self.losses:
                     lossval = lossFun.call(output, target, self).sum().item()

@@ -20,14 +20,32 @@ from common.trainer import Trainer
 from thrifty.models import get_model, get_model_exact_params
 from thrifty.sandbox import resnet18
 
-if __name__ == '__main__':
-    os.makedirs("logs", exist_ok=True)
-    
+
+import torch.distributed as dist
+import torch.multiprocessing as mp
+import torch.utils.data.distributed
+
+def main():
     parser = utils.args()
     args = parser.parse_args()
     print(args)
-    
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    if args.distributed:
+        gpu_devices = ','.join([str(id) for id in args.gpu_devices])
+        os.environ["CUDA_VISIBLE_DEVICES"] = gpu_devices
+        ngpus_per_node = torch.cuda.device_count()
+        mp.spawn(main_worker, nprocs=len(args.gpu), args=args)
+    else:
+        if torch.cuda.is_available():
+            main_worker(0, args)
+        else:
+            main_worker("cpu", args)
+
+        
+        
+def main_worker(device, args):
+    os.makedirs("logs", exist_ok=True)
+
     torch.manual_seed(args.seed)
     dataset = get_data_loaders(args) # tuple of form (train_loader, test_loader, metadata)
     metadata = dataset[2]
@@ -45,6 +63,9 @@ if __name__ == '__main__':
     # In case we want an exact number of parameters
     if args.n_params is not None and args.model not in ["block_thrifty", "blockthrifty"]:
         model, args = get_model_exact_params(model, args, metadata)
+    
+    if args.distributed:
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[device])
 
     # Log for parameters, filters and pooling strategy
     info_dict = utils.get_info(model, metadata)
@@ -60,11 +81,12 @@ if __name__ == '__main__':
             f.write("\n*******\n")
         print("-"*80 + "\n")
     
-
     # Eventually resume training
     if args.resume is not None:
         model.load_state_dict(torch.load(args.resume)["state_dict"])
-    model = model.to(device)
+
+    if device!="cpu":
+        model = model.cuda(device)
 
     # Init optimizer and scheduler
     scheduler = None
@@ -82,3 +104,6 @@ if __name__ == '__main__':
 
     trainer.train(args.epochs)
     torch.save(model.state_dict(), args.name+".model")
+
+if __name__ == '__main__':
+    main()

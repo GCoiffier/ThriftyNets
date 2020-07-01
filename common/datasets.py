@@ -37,15 +37,19 @@ def load_fashionMnist(args, **kwargs):
                 transforms.ToTensor(),
                 transforms.Normalize((0.1307,), (0.3081,))
             ])
-    
+
+    train_dataset = datasets.FashionMNIST(os.path.join(DATA_PATH, 'fashionMnist'), train=True, download=True, transform=transform)
+    test_dataset = datasets.FashionMNIST(os.path.join(DATA_PATH, 'fashionMnist'), train=False, download=True, transform=transform)
+    if args.distributed:
+        train_dataset = torch.utils.data.distributed.DistributedSampler(train_dataset)
+        test_dataset = torch.utils.data.distributed.DistributedSampler(test_dataset)
+
     train_loader = torch.utils.data.DataLoader(
-        datasets.FashionMNIST(os.path.join(DATA_PATH, 'fashionMnist'), train=True, download=True, transform=transform),
-        batch_size=args.batch_size, shuffle=True, **kwargs
+        train_dataset, batch_size=args.batch_size, shuffle=True, **kwargs
     )
     
     test_loader = torch.utils.data.DataLoader(
-        datasets.FashionMNIST(os.path.join(DATA_PATH, 'fashionMnist'), train=False, download=True, transform=transform),
-        batch_size=args.batch_size, shuffle=True, **kwargs
+        test_dataset, batch_size=args.batch_size, shuffle=True, **kwargs
     )
 
     metadata = {
@@ -72,21 +76,24 @@ def load_cifar10(args):
     
     transform_list.append(transforms.ToTensor())
     transform_list.append(transforms.Normalize(CIFAR10_MEAN, CIFAR10_STD ))
-
-
     transform_train = transforms.Compose(transform_list)
     transform_test = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize(CIFAR10_MEAN, CIFAR10_STD),
     ])
 
+    train_dataset = datasets.CIFAR10(os.path.join(DATA_PATH, 'cifar10'), train=True, download=True, transform=transform_train)
+    test_dataset = datasets.CIFAR10(os.path.join(DATA_PATH, 'cifar10'), train=False, download=True, transform=transform_test)
+
+    if args.distributed:
+        train_dataset = torch.utils.data.distributed.DistributedSampler(train_dataset)
+        test_dataset = torch.utils.data.distributed.DistributedSampler(test_dataset)
+
     train_loader = torch.utils.data.DataLoader(
-        datasets.CIFAR10(os.path.join(DATA_PATH, 'cifar10'), train=True, download=True, transform=transform_train),
-        batch_size=args.batch_size, shuffle=True)
+        train_dataset, batch_size=args.batch_size, shuffle=True)
 
     test_loader = torch.utils.data.DataLoader(
-        datasets.CIFAR10(os.path.join(DATA_PATH, 'cifar10'), train=False, download=True, transform=transform_test),
-        batch_size=args.test_batch_size, shuffle=True)
+        test_dataset, batch_size=args.test_batch_size, shuffle=True)
 
     metadata = {
         "input_shape" : (3,32,32),
@@ -119,15 +126,17 @@ def load_cifar100(args):
         transforms.Normalize(CIFAR100_MEAN, CIFAR100_STD),
     ])
 
+    train_dataset = datasets.CIFAR100(os.path.join(DATA_PATH, 'cifar100'), train=True, download=True, transform=transform_train)
+    test_dataset = datasets.CIFAR100(os.path.join(DATA_PATH, 'cifar100'), train=False, download=True, transform=transform_test)
+    if args.distributed:
+        train_dataset = torch.utils.data.distributed.DistributedSampler(train_dataset)
+        test_dataset = torch.utils.data.distributed.DistributedSampler(test_dataset)
+    
     train_loader = torch.utils.data.DataLoader(
-        datasets.CIFAR100(os.path.join(DATA_PATH, 'cifar100'), train=True, download=True, transform=transform_train),
-        batch_size=args.batch_size, shuffle=True
-    )
+        train_dataset, batch_size=args.batch_size, shuffle=True)
 
     test_loader = torch.utils.data.DataLoader(
-        datasets.CIFAR100(os.path.join(DATA_PATH, 'cifar100'), train=False, download=True, transform=transform_test),
-        batch_size=args.test_batch_size, shuffle=False
-    )
+        test_dataset, batch_size=args.test_batch_size, shuffle=False)
 
     metadata = {
         "input_shape" : (3,32,32),
