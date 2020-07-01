@@ -63,6 +63,11 @@ def args():
     parser.add_argument('--gamma', type=float, default=0.1, help="LR decay factor")
     parser.add_argument('--steps', type=int, nargs="+", default=[50,100,150])
 
+    # Parallelism
+    parser.add_argument('--distributed', action='store_true')
+    parser.add_argument('--num_workers', type=int, default=1, help="")
+    parser.add_argument("-gpu", "--gpu-devices", type=int, nargs='+', default=[0], help="")
+
     # Misc
     parser.add_argument('--checkpoint-freq', type=int, default=0, metavar='N',
                         help='we save the network parameters in a file every checkpoint-freq epochs (default: 0 ie no checkpoints)')
