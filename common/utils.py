@@ -4,6 +4,31 @@ import random
 import argparse
 import numpy as np
 
+try:
+    from ptflops import get_model_complexity_info
+    def get_info(model, metadata):
+        macs, params = get_model_complexity_info(model, metadata["input_shape"], as_strings=True, print_per_layer_stat=False, verbose=False)
+        infos = {
+            "parameters" : params,
+            "flops" : macs,
+        }
+        if (hasattr(model, "n_filters")):
+            infos["filters"] = model.n_filters
+        if (hasattr(model, "pool_stategy")):
+            infos["pool_strategy"] = model.pool_strategy
+        return infos
+        
+except:
+    def get_info(model, metadata):
+        infos = {
+            "parameters" : sum(p.numel() for p in model.parameters())
+        }
+        if (hasattr(model, "n_filters")):
+            infos["filters"] = model.n_filters
+        if (hasattr(model, "pool_stategy")):
+            infos["pool_strategy"] =  model.pool_strategy
+        return infos
+
 def args():
     parser = argparse.ArgumentParser(description='ThritfyNets')
 
@@ -31,16 +56,12 @@ def args():
     parser.add_argument('--nesterov', default=True, type=bool, help='nesterov')
     parser.add_argument('-wd', '--weight-decay', default=5e-4, type=float, help="weight decay")
     parser.add_argument('-bs', '--batch-size', type=int, default=100, help="batch size")
-    parser.add_argument('-nmb', '--n-mini-batch', type=int, default=1, 
-                        help="will perform 'n-mini-batch' forward pass with size 'batch-size' for each \
-                             backward pass. Usefull for limited memory applications")
     parser.add_argument('-tbs', '--test-batch-size', type=int, default=100)
     parser.add_argument('-epochs', '--epochs', type=int, default=200)
 
     # Scheduler
-    parser.add_argument('--min-lr', type=float, default=1e-4)
-    parser.add_argument('--patience', type=int, default=7)
-    parser.add_argument('--gamma', type=float, default=0.5, help="LR decay factor")
+    parser.add_argument('--gamma', type=float, default=0.1, help="LR decay factor")
+    parser.add_argument('--steps', type=int, nargs="+", default=[50,100,150])
 
     # Misc
     parser.add_argument('--checkpoint-freq', type=int, default=0, metavar='N',
@@ -48,11 +69,18 @@ def args():
     parser.add_argument("-topk", "--topk", type=int, default=None, nargs="+", help="Accuracy to be measured (top 1 acc, top 5 acc, ...)")
     parser.add_argument("--seed", type=int, default=random.randint(0,1000000),
                         help = "random seed to initialize.")
-    parser.add_argument("-name", "--name", type=str, default="unnamed",
-                        help="name of the experiment in the result txt file")
+    parser.add_argument("-name", "--name", type=str, default=None,
+                        help="name of the experiment in the result log file")
     parser.add_argument("-resume", "--resume", type=str, default=None)
 
     return parser
+
+def reduceLR(epoch, gamma, steps=None):
+    if steps is None:
+        return 1.0
+    else:
+        times = len([x for x in steps if x<=epoch])
+        return gamma**times
 
 class Logger:
 

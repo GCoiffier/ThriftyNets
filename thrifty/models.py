@@ -36,6 +36,20 @@ def get_model(args, metadata):
     else:
         raise Exception("Model type was not recognized")
 
+def get_model_exact_params(model, args, metadata):
+    n = model.n_parameters
+    if n<args.n_params:
+        while n<args.n_params:
+            args.filters += 1
+            model = get_model(args, metadata)
+            n = model.n_parameters
+    if n>args.n_params:
+        while n>args.n_params:
+            args.filters -= 1 
+            model = get_model(args,metadata)
+            n = model.n_parameters
+    return model, args
+
 class ThriftyNet(nn.Module):
     """
     Just a ResThriftyNet with history = 1
@@ -133,7 +147,7 @@ class ThriftyNet_3State(nn.Module):
 
         self.block1 = ThriftyBlock(self.n_filters[0], self.n_iters[0], self.n_history, [14,29], conv_mode=conv_mode, activ=activ, bias=bias)
         self.block2 = ThriftyBlock(self.n_filters[1], self.n_iters[1], self.n_history, [14,29], conv_mode=conv_mode, activ=activ, bias=bias)
-        #self.block3 = ThriftyBlock(self.n_filters[2], self.n_iters[2], self.n_history, [12, 24], conv_mode=conv_mode, activ=activ, bias=bias)
+        self.block3 = ThriftyBlock(self.n_filters[2], self.n_iters[2], self.n_history, [12, 24], conv_mode=conv_mode, activ=activ, bias=bias)
 
         self.LOutput = nn.Linear(4*self.n_filters[-1], self.n_classes)
 
@@ -144,12 +158,13 @@ class ThriftyNet_3State(nn.Module):
         x1 = self.block1(x0)
         x1 = F.pad(x1, (0, 0, 0, 0, 0, self.n_filters[1] - self.n_filters[0]))
         x2 = self.block2(x1)
-        #x2 = F.pad(x2, (0, 0, 0, 0, 0, self.n_filters[2] - self.n_filters[1]))
-        #x3 = self.block3(x2)
+        x2 = F.pad(x2, (0, 0, 0, 0, 0, self.n_filters[2] - self.n_filters[1]))
+        x3 = self.block3(x2)
 
-        #out = F.adaptive_max_pool2d(x3, (1,1))[:,:,0,0]
-        out = x2.view(x2.size()[0], -1)
+        out = F.adaptive_max_pool2d(x3, (1,1))[:,:,0,0]
+        #out = x2.view(x2.size()[0], -1)
         return self.LOutput(out)
+
 
 class EmbeddedThriftyNet(nn.Module):
     """
@@ -163,7 +178,7 @@ class EmbeddedThriftyNet(nn.Module):
         self.n_filters = n_filters
         self.pool_strategy = pool_strategy
         
-        self.Lembed = ResNetEmbedder(64, BasicBlock, [1, 1])
+        self.Lembed = ResNetEmbedder(64, BasicBlock, [1, 1], n_classes)
         self.embed_shape = (128,16,16) # output shape of the embedder
 
         self.Lthrifty = ThriftyBlock(n_filters, n_iter, n_history, pool_strategy, conv_mode=conv_mode, activ=activ, bias=bias)

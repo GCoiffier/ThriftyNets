@@ -57,9 +57,9 @@ class ThriftyBlock(nn.Module):
         self.activ = get_activ(activ)
         
         self.alpha = torch.zeros((n_iter, n_history+1))
-        for t in range(n_iter):
-            self.alpha[t,0] = 0.1
-            self.alpha[t,1] = 0.9
+        for i in range(n_iter):
+            self.alpha[i, 0] = 0.1
+            self.alpha[i, 1] = 0.9
         self.alpha = nn.Parameter(self.alpha)
 
         self.n_parameters = sum(p.numel() for p in self.parameters())
@@ -83,10 +83,9 @@ class ThriftyBlock(nn.Module):
             for i, x in enumerate(hist):
                 if x is not None:
                     a = a + self.alpha[t,i+1] * x
-
             a = self.Lnormalization[t](a)
-            
-            for i in range(1, self.n_history-1):
+
+            for i in range(self.n_history-1):
                 hist[i] = hist[i+1]
             hist[self.n_history-1] = a
 
@@ -98,7 +97,8 @@ class ThriftyBlock(nn.Module):
 
 
 class BasicBlock(nn.Module):
-    """Basic Block for resnet 18 and resnet 34
+    """
+    Basic Block for resnet 18 and resnet 34
     """
 
     #BasicBlock and BottleNeck block 

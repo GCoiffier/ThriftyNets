@@ -14,9 +14,9 @@ prefix = _term_move_up() + '\r'
 import random
 import os
 import sys
-from datasets import get_data_loaders
-from modules import *
-import utils
+from common.datasets import get_data_loaders
+from thrifty.modules import *
+import common.utils as utils
 
 class IntNoGradient(torch.autograd.Function):
     
@@ -54,7 +54,7 @@ def maxWeight(weight):
 
 def quantifier(w, n_bit):
     maxi=maxWeight(w)
-    #w = weight.clone().cuda()
+    w = weight.clone().cuda()
     a = w.shape
     v = torch.zeros(a)
     v = v + pow(2, n_bit-1 + maxi)
@@ -192,17 +192,18 @@ if __name__ == '__main__':
     torch.manual_seed(args.seed)
     train_loader, test_loader, metadata = get_data_loaders(args)
     
-    model = QuantitizedRCNN(metadata["input_shape"], metadata["n_classes"], args.size, n_iter=args.iter, n_history=args.history, 
+    model = QuantitizedRCNN(metadata["input_shape"], metadata["n_classes"], args.filters, n_iter=args.iter, n_history=args.history, 
             pool_strategy=args.pool, conv_mode=args.conv_mode, n_bits_weight=args.n_bits_weight, n_bits_activ = args.n_bits_activ)
 
     print("N parameters : ", model.n_parameters)
     if args.resume is not None:
-        model.load_state_dict(torch.load(args.resume)["state_dict"])
+        model_data = torch.load(args.resume, map_location=torch.device("cpu"))
+        model.load_state_dict(model_data)
 
     model = model.to(device)
     scheduler = None
     if args.optimizer=="sgd":
-        optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+        optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum, weight_decay=args.weight_decay)
         scheduler = ReduceLROnPlateau(optimizer, factor=args.gamma, patience=args.patience, min_lr=args.min_lr)
         # scheduler = StepLR(optimizer, 100, gamma=0.1)
     elif args.optimizer=="adam":
@@ -282,8 +283,8 @@ if __name__ == '__main__':
         print()
 
         if args.checkpoint_freq != 0 and epoch%args.checkpoint_freq == 0:
-            name = args.name+ "_e" + str(epoch) + "_acc{:d}.model".format(int(10000*logger["test_acc"]))
-            model.save(name)
+            name = args.name+ "_e" + str(epoch) + "_acc{:d}.model".format(int(10000*logger["test_acc(top1)"]))
+            torch.save(model.state_dict(), name)
 
         logger.log()
 
