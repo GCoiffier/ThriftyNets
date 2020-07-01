@@ -30,25 +30,29 @@ def main():
     args = parser.parse_args()
     print(args)
 
+    os.makedirs("logs", exist_ok=True)
+    torch.manual_seed(args.seed)
+
     if args.distributed:
-        gpu_devices = ','.join([str(id) for id in args.gpu_devices])
+        gpu_devices = ','.join([str(i) for i in args.gpu_devices])
         os.environ["CUDA_VISIBLE_DEVICES"] = gpu_devices
-        ngpus_per_node = torch.cuda.device_count()
-        mp.spawn(main_worker, nprocs=len(args.gpu), args=args)
+        n_gpus = len(args.gpu_devices) 
+        mp.spawn(main_worker, nprocs=n_gpus, args=(n_gpus, args))
     else:
         if torch.cuda.is_available():
-            main_worker(0, args)
+            main_worker(0, 1, args)
         else:
-            main_worker("cpu", args)
+            main_worker("cpu", 1, args)
 
         
         
-def main_worker(device, args):
-    os.makedirs("logs", exist_ok=True)
+def main_worker(device, world_size, args):
 
-    torch.manual_seed(args.seed)
     dataset = get_data_loaders(args) # tuple of form (train_loader, test_loader, metadata)
     metadata = dataset[2]
+
+    if args.distributed:
+        dist.init_process_group("nccl", rank=device, world_size=world_size, init_method="tcp://127.0.0.1:3456")
 
     if args.topk is not None:
         topk = tuple(args.topk)
@@ -64,9 +68,6 @@ def main_worker(device, args):
     if args.n_params is not None and args.model not in ["block_thrifty", "blockthrifty"]:
         model, args = get_model_exact_params(model, args, metadata)
     
-    if args.distributed:
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[device])
-
     # Log for parameters, filters and pooling strategy
     info_dict = utils.get_info(model, metadata)
     for key,val in info_dict.items():
@@ -87,6 +88,9 @@ def main_worker(device, args):
 
     if device!="cpu":
         model = model.cuda(device)
+    if args.distributed:
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[device])
+
 
     # Init optimizer and scheduler
     scheduler = None

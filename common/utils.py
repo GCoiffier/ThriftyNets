@@ -66,7 +66,7 @@ def args():
     # Parallelism
     parser.add_argument('--distributed', action='store_true')
     parser.add_argument('--num_workers', type=int, default=1, help="")
-    parser.add_argument("--gpu_devices", type=int, nargs='+', default=None, help="")
+    parser.add_argument("-gpu", "--gpu-devices", type=int, nargs='+', default=[0], help="")
 
     # Misc
     parser.add_argument('--checkpoint-freq', type=int, default=0, metavar='N',
