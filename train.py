@@ -17,6 +17,9 @@ from common.callback import *
 from common import utils
 from common.trainer import Trainer
 
+from common.models.densenet import tiny_densenet
+from common.models.resnets_cifar import tiny_resnet
+
 from thrifty.models import get_model, get_model_exact_params
 from thrifty.sandbox import resnet18
 
@@ -62,12 +65,16 @@ def main_worker(device, world_size, args):
         else:
             topk=(1,)
 
+    """
     model = get_model(args, metadata)
-
     # In case we want an exact number of parameters
     if args.n_params is not None and args.model not in ["block_thrifty", "blockthrifty"]:
         model, args = get_model_exact_params(model, args, metadata)
-    
+    """
+
+    model = tiny_resnet()
+    #model = tiny_densenet()
+
     # Log for parameters, filters and pooling strategy
     info_dict = utils.get_info(model, metadata)
     for key,val in info_dict.items():
