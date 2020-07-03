@@ -24,8 +24,8 @@ class Mixup:
         y_a, y_b = y, y[index]
         return mixed_x, y_a, y_b, lam
 
-    def mix_criterion(self, criterion, pred, y_a, y_b, lam):
-        return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
+    def mix_criterion(self, trainer, criterion, pred, y_a, y_b, lam):
+        return lam * criterion(pred, y_a, trainer) + (1 - lam) * criterion(pred, y_b, trainer)
 
 ## ----------------------- CUTMIX -----------------------------
 
@@ -70,8 +70,8 @@ class CutMix:
         lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (x.size()[-1] * x.size()[-2]))
         return x, target_a, target_b, lam
 
-    def mix_criterion(self, criterion, pred, y_a, y_b, lam):
-        return criterion(pred, y_a) * lam + criterion(pred, y_b) * (1. - lam)
+    def mix_criterion(self, trainer, criterion, pred, y_a, y_b, lam):
+        return criterion(pred, y_a, trainer) * lam + criterion(pred, y_b, trainer) * (1. - lam)
 
 ## ----------------------- CUTOUT -----------------------------
 

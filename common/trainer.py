@@ -126,7 +126,7 @@ class Trainer:
                 output = self.model(data)
                 loss = 0
                 for lossFun in self.losses:
-                    loss += self.data_augmenter.mix_criterion(lossFun.call, output, target_a, target_b, lam)
+                    loss += self.data_augmenter.mix_criterion(self, lossFun.call, output, target_a, target_b, lam)
                 
             else:
                 output = self.model(data)
