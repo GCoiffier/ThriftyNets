@@ -127,19 +127,18 @@ class Trainer:
                 loss = 0
                 for lossFun in self.losses:
                     loss += self.data_augmenter.mix_criterion(lossFun.call, output, target_a, target_b, lam)
-
+                
             else:
                 output = self.model(data)
                 loss = 0
                 for lossFun in self.losses:
                     loss += lossFun.call(output, target, self).sum()
-                loss.backward() 
-            
-            for optim in self.optims:           
-                optim.step()
+                loss.backward()
 
             self.metrics["train_acc"] += accuracy(output, target, topk=self.topk)
             self.metrics["train_loss"] += loss.item()
+            for optim in self.optims:           
+                optim.step()
 
             self._call_end_forward_CB()
         self.metrics["epoch_time"] = (time.time() - t0)/60
