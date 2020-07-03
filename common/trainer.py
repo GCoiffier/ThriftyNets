@@ -133,8 +133,8 @@ class Trainer:
                 loss = 0
                 for lossFun in self.losses:
                     loss += lossFun.call(output, target, self).sum()
-                loss.backward()
-
+            
+            loss.backward()
             self.metrics["train_acc"] += accuracy(output, target, topk=self.topk)
             self.metrics["train_loss"] += loss.item()
             for optim in self.optims:           
