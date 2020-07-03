@@ -1,8 +1,81 @@
+import torch
 from PIL import Image, ImageEnhance, ImageOps
 import numpy as np
 import random
+from numpy.random import beta
 
-class Cutout(object):
+## ------------ MIXUP -----------------------------------------
+
+class Mixup:
+
+    def __init__(self, alpha=1.0):
+        self.alpha = alpha
+
+    def mix_data(self, x, y, device):
+        '''Returns mixed inputs, pairs of targets, and lambda'''
+        if self.alpha > 0:
+            lam = beta(self.alpha, self.alpha)
+        else:
+            lam = 1
+
+        batch_size = x.size()[0]
+        index = torch.randperm(batch_size).to(device)
+        mixed_x = lam * x + (1 - lam) * x[index, :]
+        y_a, y_b = y, y[index]
+        return mixed_x, y_a, y_b, lam
+
+    def mix_criterion(self, criterion, pred, y_a, y_b, lam):
+        return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
+
+## ----------------------- CUTMIX -----------------------------
+
+class CutMix:
+
+    def __init__(self, alpha=1.0):
+        self.alpha = alpha
+
+    def _rand_bbox(self, size, lam):
+        W = size[2]
+        H = size[3]
+        cut_rat = np.sqrt(1. - lam)
+        cut_w = np.int(W * cut_rat)
+        cut_h = np.int(H * cut_rat)
+
+        # uniform
+        cx = np.random.randint(W)
+        cy = np.random.randint(H)
+
+        bbx1 = np.clip(cx - cut_w // 2, 0, W)
+        bby1 = np.clip(cy - cut_h // 2, 0, H)
+        bbx2 = np.clip(cx + cut_w // 2, 0, W)
+        bby2 = np.clip(cy + cut_h // 2, 0, H)
+
+        return bbx1, bby1, bbx2, bby2
+
+
+    def mix_data(self, x, y, device):
+        if self.alpha>0:
+            lam = beta(self.alpha, self.alpha)
+        else:
+            lam = 1
+        batch_size = x.size()[0]    
+
+        rand_index = torch.randperm(batch_size).to(device)
+        target_a = y
+        target_b = y[rand_index]
+        bbx1, bby1, bbx2, bby2 = self._rand_bbox(x.size(), lam)
+        x[:, :, bbx1:bbx2, bby1:bby2] = x[rand_index, :, bbx1:bbx2, bby1:bby2]
+        
+        # adjust lambda to exactly match pixel ratio
+        lam = 1 - ((bbx2 - bbx1) * (bby2 - bby1) / (x.size()[-1] * x.size()[-2]))
+        return x, target_a, target_b, lam
+
+    def mix_criterion(self, criterion, pred, y_a, y_b, lam):
+        return criterion(pred, y_a) * lam + criterion(pred, y_b) * (1. - lam)
+
+## ----------------------- CUTOUT -----------------------------
+
+class Cutout:
     def __init__(self, length):
         self.length = length
 
@@ -25,7 +98,9 @@ class Cutout(object):
 
         return img
 
-class ImageNetPolicy(object):
+## ----------------------- AUTO AUGMENT -----------------------------
+
+class ImageNetPolicy:
     """ Randomly choose one of the best 24 Sub-policies on ImageNet.
 
         Example:
@@ -80,7 +155,7 @@ class ImageNetPolicy(object):
         return "AutoAugment ImageNet Policy"
 
 
-class CIFAR10Policy(object):
+class CIFAR10Policy:
     """ Randomly choose one of the best 25 Sub-policies on CIFAR10.
 
         Example:
@@ -135,7 +210,7 @@ class CIFAR10Policy(object):
         return "AutoAugment CIFAR10 Policy"
 
 
-class SVHNPolicy(object):
+class SVHNPolicy:
     """ Randomly choose one of the best 25 Sub-policies on SVHN.
 
         Example:
@@ -190,7 +265,7 @@ class SVHNPolicy(object):
         return "AutoAugment SVHN Policy"
 
 
-class SubPolicy(object):
+class SubPolicy:
     def __init__(self, p1, operation1, magnitude_idx1, p2, operation2, magnitude_idx2, fillcolor=(128, 128, 128)):
         ranges = {
             "shearX": np.linspace(0, 0.3, 10),

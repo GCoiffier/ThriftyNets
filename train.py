@@ -101,7 +101,14 @@ def main_worker(device, world_size, args):
     elif args.optimizer=="adam":
         optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
 
-    trainer = Trainer(device, model, dataset, optimizer, CrossEntropy(), args.name, topk, args.checkpoint_freq)
+    # Init data augmenter
+    dataaugment = None
+    if args.mixup:
+        dataaugment = "mixup"
+    elif args.cutmix:
+        dataaugment = "cutmix"
+
+    trainer = Trainer(device, model, dataset, optimizer, CrossEntropy(), args.name, topk, args.checkpoint_freq, dataaugment)
 
     if scheduler is not None:
         trainer.callbacks.append(SchedulerCB(scheduler))

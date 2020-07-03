@@ -49,6 +49,10 @@ def args():
     parser.add_argument("-cutout", "--cutout", type=int, default=0)
     parser.add_argument("-auto-augment", "--auto-augment", action="store_true")
 
+    mix_group = parser.add_mutually_exclusive_group() # Mixup and Cutmix cannot be run simultaneously
+    mix_group.add_argument("-mixup", "--mixup", action="store_true", help="enables mixup data augmentation")
+    mix_group.add_argument("-cutmix", "--cutmix", action="store_true", help="enables cutmix data augmentation")
+
     # Optimizer
     parser.add_argument("-opt", "--optimizer", type=str, default="sgd")
     parser.add_argument('-lr', '--learning-rate', type=float, default=0.1, help="Learning rate")

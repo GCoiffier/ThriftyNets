@@ -6,6 +6,7 @@ import sys
 
 from .utils import accuracy, Logger
 from .callback import *
+from .dataaugment import CutMix, Mixup
 
 class Trainer:
 
@@ -40,7 +41,7 @@ class Trainer:
         Indicator for which metrics to measure during testing. Default is (1,), that is measuring top1 accuracy.
     """
 
-    def __init__(self, device, model, dataset, optims, losses, name=None, topk=(1,), checkpointFreq=0):
+    def __init__(self, device, model, dataset, optims, losses, name=None, topk=(1,), checkpointFreq=0, data_augmenter=None):
         self.device = device
 
         self.model = model
@@ -57,6 +58,12 @@ class Trainer:
         else :
             self.losses = [losses]
         
+        self.data_augmenter = None
+        if data_augmenter == "cutmix":
+            self.data_augmenter = CutMix()
+        elif data_augmenter == "mixup":
+            self.data_augmenter = Mixup()
+
         self.name = "unnamed"
         self.logFile = "unnamed.log"
         self.logger = None
@@ -113,12 +120,20 @@ class Trainer:
                 data, target = data.cuda(self.device), target.cuda(self.device)
             for optim in self.optims :
                 optim.zero_grad()
-            output = self.model(data)
-            
-            loss = 0
-            for lossFun in self.losses:
-                loss += lossFun.call(output, target, self).sum()
-            loss.backward() 
+
+            if self.data_augmenter is not None:
+                data, target_a, target_b, lam = self.data_augmenter.mix_data(data, target, self.device)
+                output = self.model(data)
+                loss = 0
+                for lossFun in self.losses:
+                    loss += self.data_augmenter.mix_criterion(lossFun.call, output, target_a, target_b, lam)
+
+            else:
+                output = self.model(data)
+                loss = 0
+                for lossFun in self.losses:
+                    loss += lossFun.call(output, target, self).sum()
+                loss.backward() 
             
             for optim in self.optims:           
                 optim.step()
