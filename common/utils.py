@@ -35,11 +35,11 @@ def args():
     # Model settings
     parser.add_argument('-model', "--model", type=str, default="res_thrifty")
     parser.add_argument('-f', "--filters", type=int, default=128, help="Number of filters in the Thrifty Block.")
-    parser.add_argument('-T', "--iter", type=int, default=30, help="Depth (#iterations) of the Thrifty Block")
+    parser.add_argument('-T', "--iter", type=int, default=20, help="Depth (#iterations) of the Thrifty Block")
     parser.add_argument('-activ', "--activ", type=str, default="tanh")
     parser.add_argument('-H', "--history", type=int, default=5)
     parser.add_argument('-bias', "--bias", action="store_true")
-    parser.add_argument('-pool', "--pool", nargs="+", type=int, default=[7])
+    parser.add_argument('-pool', "--pool", nargs="+", type=int, default=[4])
     parser.add_argument('-conv-mode', "--conv-mode", type=str, default="mb1")
     parser.add_argument('-out-mode', '--out-mode', type=str, default="pool", choices=["pool", "flatten"])
     parser.add_argument('-n-params', "--n-params", type=int, default=None)
